@@ -1,4 +1,4 @@
-# VLMOcu : Very Large Matrix Operation Library with CUDA  
+# VLMOcu : Very Large Matrix Operations Library with CUDA  
 
 ### Support operation list
 1. Matrix Multiplication (not yet implemented)
