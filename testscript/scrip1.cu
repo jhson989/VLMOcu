@@ -65,6 +65,7 @@ int main(void) {
     // Allocate device memory
     VLMO_malloc_device_mem (desc);
 
+    VLMO_clear_all (desc);
     printf("\nEnd..\n");
     return 0;
 }

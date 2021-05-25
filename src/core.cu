@@ -116,3 +116,27 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc) {
 
 
 }
+
+void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
+
+    if (desc.host_A != nullptr)
+        free (desc.host_A);
+
+    if (desc.device_A != nullptr)  
+        cudaErrChk (cudaFree (desc.device_A));
+
+    if (desc.host_B != nullptr)
+        free (desc.host_B);
+
+    if (desc.device_B != nullptr)  
+        cudaErrChk (cudaFree (desc.device_B));
+
+    if (desc.host_C != nullptr)
+        free (desc.host_C); 
+
+    if (desc.device_C != nullptr)  
+        cudaErrChk (cudaFree (desc.device_C));
+
+
+}
+
