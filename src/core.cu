@@ -91,24 +91,3 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
   * Functions for managing device memory
   *******************************************************/
 
-float** VLMO_malloc(const int num_mems, const unsigned int* num_elements, const size_t free) {
-
-    float** d_mems = (float*) malloc (sizeof(float*)*num_mems);
-
-    size_t total_size = 0;
-    for (int i=0; i<num_mems; i++) total_num += (num_elements[i]*sizeof(float));
-
-    if (total_size < free) {
-        for (int i=0; i<num_mems; i++)
-            cudaErrChk (cudaMalloc ((void **)&d_mems[i], sizeof(float)*num_elements[i]));
-    } elss {
-
-    }
-
-
-
-    return d_mems;
-
-}
-
-
