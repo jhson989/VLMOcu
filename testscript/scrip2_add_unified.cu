@@ -41,9 +41,9 @@ int main(void) {
       ****/
 
     // Define this problem 
-    size_t m = 10240*4;
-    size_t n = 10240*2;
-    size_t k = 10240*2;
+    size_t m = 1024*25;
+    size_t n = 1024*25;
+    size_t k = 1024*25;
     VLMO_Operator_t op = VLMO_Op_Add_t;
     int device_id = 0;
     

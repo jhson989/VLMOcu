@@ -103,7 +103,6 @@ void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbos
         size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
         printf("[Mem] Device memory allocation completed..\n");
         printf("    total usage usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
-
     }
 
 }
@@ -126,7 +125,6 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
         size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
         printf("[Mem] Unified memory allocation completed..\n");
         printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
-
     }
 }
 

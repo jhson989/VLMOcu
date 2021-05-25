@@ -1,7 +1,7 @@
 CC = /usr/local/cuda/bin/nvcc
 PROGS = 
-LIBS = src/core.cu
-INCS = include/core.cuh
+LIBS = src/core.cu src/operations.cu
+INCS = include/core.cuh include/operations.cuh
 OPTIONS = -lcuda -O3
 
 all: ${PROGS}
