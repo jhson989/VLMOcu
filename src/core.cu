@@ -91,3 +91,28 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
   * Functions for managing device memory
   *******************************************************/
 
+void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc) {
+
+    if (desc.flag_unified_mem == true) {
+        VLMO_malloc_device_unified (desc)
+        return ;
+    } 
+
+}
+
+void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc) {
+
+    // Allocate unified memory for A
+    cudaErrChk( cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
+    memcpy (desc.device_A, desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
+
+    // Allocate unified memory for B
+    cudaErrChk( cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
+    memcpy (desc.device_B, desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
+
+    // Allocate unified memory for C
+    cudaErrChk( cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
+    memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
+
+
+}

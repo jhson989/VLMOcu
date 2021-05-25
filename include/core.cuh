@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 
 // Function declaration
 
@@ -27,17 +28,20 @@ typedef struct {
    // A
    size_t A_h=0;
    size_t A_w=0;
-   float* A=NULL;
+   float* host_A=NULL;
+   float* device_A=NULL;
 
    // B
    size_t B_h=0;
    size_t B_w=0;
-   float* B=NULL;
+   float* host_B=NULL;
+   float* device_C=NULL;
 
    // C
    size_t C_h=0;
    size_t C_w=0;
-   float* C=NULL;
+   float* host_C=NULL;
+   float* device_C=NULL;
 
    // Optim
    bool flag_unified_mem=false;
@@ -45,6 +49,7 @@ typedef struct {
    // Device properties
    size_t num_device=0;
    size_t mem_free_size=0;
+   cudaDeviceProp prop;
 
 
 } VLMO_Operator_Descriptor_t;
@@ -52,9 +57,10 @@ typedef struct {
 
 
 // Function declaration
-
 int VLMO_get_device_num(const bool verbose);
 cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, size_t* total, const bool verbose);
+void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc);
+void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc);
 
 #define cudaErrChk(ans) { cudaAssert((ans), __FILE__, __LINE__); }
 inline void cudaAssert(cudaError_t code, const char *file, int line, bool abort=true)
