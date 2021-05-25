@@ -30,7 +30,7 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 }
 
 void test_result (VLMO_Operator_Descriptor_t& desc) {
-
+    printf("[Test] Start result test..\n");
     for (int i=0; i<desc.C_h; i++)
         for (int j=0; j<desc.C_w; j++) {
             if (desc.device_C[i*desc.C_w+j] != desc.device_A[i*desc.C_w+j] + desc.device_B[i*desc.C_w+j]) {
@@ -80,7 +80,11 @@ int main(void) {
     // Allocate device memory
     VLMO_malloc_device_mem (desc, true);
 
+    // Launch matrix addtion kernel
+    printf("[Func] Addition start..\n");
     VLMO_addition (desc);
+    
+    // Test result
     test_result(desc);
 
     // Free all memory allocations
