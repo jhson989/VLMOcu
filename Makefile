@@ -1,13 +1,13 @@
 CC = /usr/local/cuda/bin/nvcc
 PROGS = 
-LIBS = src/core.cu src/operations.cu
-INCS = include/core.cuh include/operations.cuh
+CUDAFILES = src/core.cu src/operations.cu src/kernel.cu
+INCS = include/core.cuh include/operations.cuh include/kernel.cuh
 OPTIONS = -lcuda -O3
 
 all: ${PROGS}
 
-%: %.cu ${LIBS} ${INCS} Makefile
-	${CC} ${OPTIONS} -o $@ ${LIBS} $<
+%: %.cu ${CUDAFILES} ${INCS} Makefile
+	${CC} ${OPTIONS} -o $@ ${CUDAFILES} $<
 
 
 clean :
