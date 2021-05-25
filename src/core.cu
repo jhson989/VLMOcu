@@ -94,15 +94,15 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
 void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbose=false) {
 
     if (desc.flag_unified_mem == true) {
-        VLMO_malloc_device_mem_unified (desc);
+        VLMO_malloc_device_mem_unified (desc, verbose);
         return ;
     } 
 
 
     if (verbose == true) {
-        size_t total_size = sizeof(float)*desc.A_h*desc.A_w) + sizeof(float)*desc.B_h*desc.B_w) + sizeof(float)*desc.C_h*desc.C_w);
+        size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
         printf("[Mem] Device memory allocation completed..\n");
-        printf("    total usage usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9)
+        printf("    total usage usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
 
     }
 
@@ -123,9 +123,9 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
     memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
 
     if (verbose == true) {
-        size_t total_size = sizeof(float)*desc.A_h*desc.A_w) + sizeof(float)*desc.B_h*desc.B_w) + sizeof(float)*desc.C_h*desc.C_w);
+        size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
         printf("[Mem] Unified memory allocation completed..\n");
-        printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9)
+        printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
 
     }
 }
