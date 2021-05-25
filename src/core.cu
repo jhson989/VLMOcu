@@ -115,6 +115,7 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc) {
     memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
 
 
+    printf("1 End..\n");
 }
 
 void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
@@ -136,7 +137,7 @@ void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
 
     if (desc.device_C != nullptr)  
         cudaErrChk (cudaFree (desc.device_C));
-
-
+    
+    printf("2 End..\n");
 }
 
