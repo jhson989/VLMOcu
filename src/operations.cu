@@ -23,7 +23,7 @@ void VLMO_addition_unified (VLMO_Operator_Descriptor_t& desc){
     int num_threads = 1024;
     int num_blocks = (num_elements+num_threads-1) / num_threads;
 
-    cuda_matrix_add<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements)
+    cuda_matrix_add<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
