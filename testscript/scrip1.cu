@@ -39,7 +39,7 @@ int main(void) {
     size_t m = 1024;
     size_t n = 1024;
     size_t k = 1024;
-    VLMO_Operator_t op = VLMO_Add;
+    VLMO_Operator_t op = VLMO_Op_Add_t;
     int device_id = 0;
     
 
@@ -63,8 +63,11 @@ int main(void) {
     test_init (desc);
 
     // Allocate device memory
-    VLMO_malloc_device_mem (desc);
+    VLMO_malloc_device_mem (desc, true);
 
+    //VLMO_addition (desc);
+
+    // Free all memory allocations
     VLMO_clear_all (desc);
     printf("\nEnd..\n");
     return 0;

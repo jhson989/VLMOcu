@@ -9,10 +9,10 @@
 // Function declaration
 
 typedef enum {
-   VLMO_Add = 0, 
-   VLMO_Subtract,
-   VLMO_Multiply,
-   VLMO_Transpose
+   VLMO_Op_Add_t = 0, 
+   VLMO_Op_Subtract_t,
+   VLMO_Op_Multiply_t,
+   VLMO_Op_Transpose_t
 } VLMO_Operator_t;
 
 typedef enum {
@@ -28,20 +28,20 @@ typedef struct {
    // A
    size_t A_h=0;
    size_t A_w=0;
-   float* host_A=NULL;
-   float* device_A=NULL;
+   float* host_A=nullptr;
+   float* device_A=nullptr;
 
    // B
    size_t B_h=0;
    size_t B_w=0;
-   float* host_B=NULL;
-   float* device_B=NULL;
+   float* host_B=nullptr;
+   float* device_B=nullptr;
 
    // C
    size_t C_h=0;
    size_t C_w=0;
-   float* host_C=NULL;
-   float* device_C=NULL;
+   float* host_C=nullptr;
+   float* device_C=nullptr;
 
    // Optim
    bool flag_unified_mem=false;
@@ -59,8 +59,8 @@ typedef struct {
 // Function declaration
 int VLMO_get_device_num(const bool verbose);
 cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, size_t* total, const bool verbose);
-void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc);
-void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc);
+void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbose);
+void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const bool verbose);
 void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc);
 
 #define cudaErrChk(ans) { cudaAssert((ans), __FILE__, __LINE__); }
