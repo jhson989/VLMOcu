@@ -16,7 +16,7 @@ inline void cudaAssert(cudaError_t code, const char *file, int line, bool abort=
 }
 
 
-inline int VLMO_get_device_num(const bool verbose);
+int VLMO_get_device_num(const bool verbose);
 cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, size_t& total, const bool verbose);
 
 

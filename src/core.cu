@@ -4,8 +4,7 @@
 /*
  * Get the number of GPU device(s) on the machine
  */
-
-inline int VLMO_get_device_num(const bool verbose=false) {
+int VLMO_get_device_num(const bool verbose=false) {
 
     int num_devices;
     cudaErrChk (cudaGetDeviceCount (&num_devices));
@@ -28,7 +27,14 @@ inline int VLMO_get_device_num(const bool verbose=false) {
 cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, size_t& total, const bool verbose=false) {
 
     cudaDeviceProp prop;
+    cudaErrChk ( cudaSetDevice (device_id));
     cudaErrChk ( cudaGetDeviceProperties (&prop, device_id) );
+
+    // get memory info
+    CUdevice dev;
+    CUcontext ctx;
+    cuDeviceGet(&dev,device_id);
+    cuCtxCreate(&ctx, 0, dev);
     cuMemGetInfo (&free, &total);
 
     if (verbose == true) {
@@ -49,10 +55,10 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, siz
         printf ("  Maximum size of a block [%d]\n"
                 , prop.maxThreadsPerBlock);
         printf ("\n[Global mem]\n");
-        printf ("  Global memory size :%dKB\n", (int)(total/1.0e3));
-        printf ("  Free memory size :%dKB\n", (int)(free/1.0e3));
+        printf ("  Global memory size : %.3f GB\n", (float)(total/1.0e9));
+        printf ("  Free memory size : %.3f GB\n", (float)(free/1.0e9));
         printf ("\n[Shared mem]\n");
-        printf ("  Shared memory size per block :%dKB\n", (int)(prop.sharedMemPerBlock/1.0e3));
+        printf ("  Shared memory size per block : %d KB\n", (int)(prop.sharedMemPerBlock/1.0e3));
 
     }
 
