@@ -14,7 +14,7 @@ int main(void) {
     size_t ldb = 1024;
     size_t ldc = 1024;
     VLMO_Operator_t op = VLMO_Add;
-    unsigned int device_id = 1;
+    int device_id = 1;
     
 
     // Get device information
