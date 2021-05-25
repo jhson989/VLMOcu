@@ -5,21 +5,21 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
     srand(0);
 
     // A
-    float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w)
+    float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
     for (int i=0; i<desc.A_h; i++)
         for (int j=0; j<desc.A_w; j++)
             A[i*desc.A_w+j] = (rand ()%1000-500)/100;
     desc.host_A = A;
 
     // B
-    float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w)
+    float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
     for (int i=0; i<desc.B_h; i++)
         for (int j=0; j<desc.B_w; j++)
             B[i*desc.B_w+j] = (rand ()%1000-500)/100;
     desc.host_B = B;
 
     // C
-    float* C = (float*) malloc (sizeof (float)*desc.C_h*desc.C_w)
+    float* C = (float*) malloc (sizeof (float)*desc.C_h*desc.C_w);
     for (int i=0; i<desc.C_h; i++)
         for (int j=0; j<desc.C_w; j++)
             A[i*desc.C_w+j] = (rand ()%1000-500)/100;
@@ -65,6 +65,7 @@ int main(void) {
     // Allocate device memory
     VLMO_malloc_device_mem (desc);
 
+    printf("\nEnd..\n");
     return 0;
 }
 
