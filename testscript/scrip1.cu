@@ -25,6 +25,11 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
             A[i*desc.C_w+j] = (rand ()%1000-500)/100;
     desc.host_C = C;
 
+    size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
+    printf("[Mem] Host memory allocation completed..\n");
+    printf("    total usage usage : %.3f GB\n", total_size*1e-9);
+
+
 }
 
 int main(void) {
@@ -36,9 +41,9 @@ int main(void) {
       ****/
 
     // Define this problem 
-    size_t m = 1024;
-    size_t n = 1024;
-    size_t k = 1024;
+    size_t m = 10240*4;
+    size_t n = 10240*2;
+    size_t k = 10240*2;
     VLMO_Operator_t op = VLMO_Op_Add_t;
     int device_id = 0;
     
