@@ -1,11 +1,19 @@
 #include <cuda.h>
 #include "../include/core.cuh"
 
-/*
- * Get the number of GPU device(s) on the machine
- */
-int VLMO_get_device_num(const bool verbose=false) {
 
+
+
+/******************************************************
+  * Functions for querying device properties
+  *******************************************************/
+
+int VLMO_get_device_num(const bool verbose=false) {
+    /*
+     * Get the number of GPU device(s) on the machine
+     * Args
+     *   verbose 
+     */
     int num_devices;
     cudaErrChk (cudaGetDeviceCount (&num_devices));
 
@@ -21,22 +29,29 @@ int VLMO_get_device_num(const bool verbose=false) {
 
 
 
-/*
- * Get properties of certain GPU device [device_id]
- */
-cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, size_t& total, const bool verbose=false) {
+cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, size_t* total, const bool verbose=false) {
+    /*
+     * Get properties of certain GPU device [device_id]
+     * Args
+     *   device_id
+     *   verbose 
+     */
 
+    // get device info
     cudaDeviceProp prop;
     cudaErrChk ( cudaSetDevice (device_id));
     cudaErrChk ( cudaGetDeviceProperties (&prop, device_id) );
 
     // get memory info
-    CUdevice dev;
-    CUcontext ctx;
-    cuDeviceGet(&dev,device_id);
-    cuCtxCreate(&ctx, 0, dev);
-    cuMemGetInfo (&free, &total);
+    if (free != NULL && total != NULL) {
+        CUdevice dev;
+        CUcontext ctx;
+        cuDeviceGet(&dev,device_id);
+        cuCtxCreate(&ctx, 0, dev);
+        cuMemGetInfo (free, total);
+    }
 
+    //
     if (verbose == true) {
         printf ("Device Number: %d\n", device_id);
         printf ("  Device name: %s\n", prop.name);
@@ -54,9 +69,13 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, siz
                 , prop.maxGridSize[0], prop.maxGridSize[0], prop.maxGridSize[0]);
         printf ("  Maximum size of a block [%d]\n"
                 , prop.maxThreadsPerBlock);
-        printf ("\n[Global mem]\n");
-        printf ("  Global memory size : %.3f GB\n", (float)(total/1.0e9));
-        printf ("  Free memory size : %.3f GB\n", (float)(free/1.0e9));
+
+        if (free != NULL && total != NULL) {
+            printf ("\n[Global mem]\n");
+            printf ("  Global memory size : %.3f GB\n", (float)(*total/1.0e9));
+            printf ("  Free memory size : %.3f GB\n", (float)(*free/1.0e9));
+        }
+
         printf ("\n[Shared mem]\n");
         printf ("  Shared memory size per block : %d KB\n", (int)(prop.sharedMemPerBlock/1.0e3));
 
@@ -65,5 +84,31 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t& free, siz
     return prop;
 }
 
+
+
+
+/******************************************************
+  * Functions for managing device memory
+  *******************************************************/
+
+float** VLMO_malloc(const int num_mems, const unsigned int* num_elements, const size_t free) {
+
+    float** d_mems = (float*) malloc (sizeof(float*)*num_mems);
+
+    size_t total_size = 0;
+    for (int i=0; i<num_mems; i++) total_num += (num_elements[i]*sizeof(float));
+
+    if (total_size < free) {
+        for (int i=0; i<num_mems; i++)
+            cudaErrChk (cudaMalloc ((void **)&d_mems[i], sizeof(float)*num_elements[i]));
+    } elss {
+
+    }
+
+
+
+    return d_mems;
+
+}
 
 
