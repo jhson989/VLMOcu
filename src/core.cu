@@ -94,7 +94,7 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
 void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc) {
 
     if (desc.flag_unified_mem == true) {
-        VLMO_malloc_device_unified (desc)
+        VLMO_malloc_device_mem_unified (desc);
         return ;
     } 
 

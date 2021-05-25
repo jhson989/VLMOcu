@@ -35,7 +35,7 @@ typedef struct {
    size_t B_h=0;
    size_t B_w=0;
    float* host_B=NULL;
-   float* device_C=NULL;
+   float* device_B=NULL;
 
    // C
    size_t C_h=0;
