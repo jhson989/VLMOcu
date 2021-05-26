@@ -53,6 +53,8 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
 
     //
     if (verbose == true) {
+        printf ("\n========================================================\n");
+        printf ("[System Environment]\n");
         printf ("Device Number: %d\n", device_id);
         printf ("  Device name: %s\n", prop.name);
         printf ("  Device compute capability: %d.%d\n", prop.major, prop.minor);
@@ -78,6 +80,7 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
 
         printf ("\n[Shared mem]\n");
         printf ("  Shared memory size per block : %d KB\n", (int)(prop.sharedMemPerBlock/1.0e3));
+        printf ("\n========================================================\n");
 
     }
 
