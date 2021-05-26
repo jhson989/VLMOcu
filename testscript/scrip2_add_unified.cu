@@ -82,7 +82,7 @@ int main(void) {
 
     // Launch matrix addtion kernel
     printf("[Func] Addition start..\n");
-    VLMO_addition (desc);
+    VLMO_addition (desc, true);
     
     // Test result
     test_result(desc);
