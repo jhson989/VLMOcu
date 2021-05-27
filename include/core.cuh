@@ -18,7 +18,7 @@ typedef enum {
     VLMO_Op_Element_Div,
 
     // Matrix multiplication
-    VLMO_Op_Mat_MuL,
+    VLMO_Op_Mat_Mul,
 
     // Single matrix operation
     VLMO_Op_Transpose,
@@ -67,6 +67,8 @@ typedef struct {
    float* device_C=nullptr;
 
    // Optim
+   dim3 num_threads;
+   dim3 num_blocks;
    bool flag_unified_mem=false;
 
    // Device properties

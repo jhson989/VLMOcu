@@ -20,7 +20,7 @@ void VLMO_element_division_unified (VLMO_Operator_Descriptor_t& desc);
 
 
 /** Matrix multiplication **/
-void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc);
+void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t, const bool measure);
 void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc);
 
 void VLMO_transposition (VLMO_Operator_Descriptor_t& desc);

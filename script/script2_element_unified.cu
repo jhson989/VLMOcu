@@ -67,8 +67,8 @@ int main(void) {
 
 
     /****
-      *** Very Large Matrices Addition Example with a Single Device
-      *** There Matrices stored in memory with "row" major
+      *** Very Large Matrices Element-wise Operation Example with a Single Device
+      *** These matrices stored in memory with "row" major
       ****/
 
     // Define this problem 
@@ -103,6 +103,8 @@ int main(void) {
         desc.mem_free_size = free;
         desc.num_device = 1;
         desc.prop = prop;
+        desc.num_threads = dim3(1024);
+        desc.num_blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
         // Initiate data for test
         test_init (desc);

@@ -11,7 +11,9 @@
 
 
 /******************************************************
+  *****************************************************
   * Functions for element-wise opearations
+  *****************************************************
   *******************************************************/
 
 void VLMO_element_operation (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t op=VLMO_Op_No, const bool measure=false) {
@@ -61,10 +63,10 @@ void VLMO_element_addition (VLMO_Operator_Descriptor_t& desc) {
 void VLMO_element_addition_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
-    int num_threads = 1024;
-    int num_blocks = (num_elements+num_threads-1) / num_threads;
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
 
-    cuda_element_add<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_add<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -81,10 +83,10 @@ void VLMO_element_subtraction (VLMO_Operator_Descriptor_t& desc) {
 void VLMO_element_subtraction_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
-    int num_threads = 1024;
-    int num_blocks = (num_elements+num_threads-1) / num_threads;
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
 
-    cuda_element_sub<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_sub<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -102,10 +104,11 @@ void VLMO_element_multiplication (VLMO_Operator_Descriptor_t& desc) {
 void VLMO_element_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
-    int num_threads = 1024;
-    int num_blocks = (num_elements+num_threads-1) / num_threads;
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
 
-    cuda_element_mul<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+
+    cuda_element_mul<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -122,10 +125,11 @@ void VLMO_element_division (VLMO_Operator_Descriptor_t& desc) {
 void VLMO_element_division_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
-    int num_threads = 1024;
-    int num_blocks = (num_elements+num_threads-1) / num_threads;
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
 
-    cuda_element_div<<<num_blocks, num_threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+
+    cuda_element_div<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -136,16 +140,48 @@ void VLMO_element_division_unified (VLMO_Operator_Descriptor_t& desc) {
 
 
 /******************************************************
+  *****************************************************
   * Functions for matrix multiplication
+  *****************************************************
   *******************************************************/
 
-void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc) {
+void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t, const bool measure) {
+
+
+    // Performance measurement
+    cudaEvent_t event_start, event_stop;
+    if (measure == true) {
+        VLMO_record_start (event_start, event_stop);
+    }
+
+
+
     if (desc.flag_unified_mem == true) {
         VLMO_matrix_multiplication_unified (desc);
     } 
+
+
+
+    // Performance measurement
+    if (measure == true) {
+        VLMO_record_end (event_start, event_stop);
+    }
+
+
 }
 
 void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
+    
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
+
+    size_t m = desc.C_h;
+    size_t n = desc.B_w;
+    size_t k = desc.A_w;
+
+    cuda_matrix_mul_basic<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, m, n, k);
+    cudaDeviceSynchronize(); 
+    cudaErrChk( cudaGetLastError ());
 
 }
 
@@ -154,7 +190,9 @@ void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
 
 
 /******************************************************
+  *****************************************************
   * Functions for matrix transposition
+  *****************************************************
   *******************************************************/
 
 void VLMO_transposition (VLMO_Operator_Descriptor_t& desc) {
