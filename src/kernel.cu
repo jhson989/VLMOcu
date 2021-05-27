@@ -59,3 +59,18 @@ __global__ void cuda_matrix_mul_basic (const float *A, const float *B, float *C,
 }
 
 
+/******************************************************
+  *****************************************************
+  * CUDA kernels for matrix transposition
+  *****************************************************
+  *******************************************************/
+  
+
+
+__global__ void cuda_matrix_transpose_basic (const float *in, float *out, const size_t M, const size_t N) {
+    
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    out[j*M+i] = in[i*N+j];
+}

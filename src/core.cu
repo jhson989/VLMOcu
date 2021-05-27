@@ -113,22 +113,28 @@ void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbos
 void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const bool verbose=false) {
 
     // Allocate unified memory for A
-    cudaErrChk( cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
-    memcpy (desc.device_A, desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
-    free (desc.host_A);
-    desc.host_A = nullptr;
+    if (desc.host_A != nullptr) {
+        cudaErrChk( cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
+        memcpy (desc.device_A, desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
+        free (desc.host_A);
+        desc.host_A = nullptr;
+    }
 
     // Allocate unified memory for B
-    cudaErrChk( cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
-    memcpy (desc.device_B, desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
-    free (desc.host_B);
-    desc.host_B = nullptr;
+    if (desc.host_B != nullptr) {
+        cudaErrChk( cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
+        memcpy (desc.device_B, desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
+        free (desc.host_B);
+        desc.host_B = nullptr;
+    }
 
     // Allocate unified memory for C
-    cudaErrChk( cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
-    memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
-    free (desc.host_C);
-    desc.host_C = nullptr;
+    if (desc.host_C != nullptr) {
+        cudaErrChk( cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
+        memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
+        free (desc.host_C);
+        desc.host_C = nullptr;
+    }
 
     if (verbose == true) {
         size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;

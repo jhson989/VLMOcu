@@ -195,13 +195,42 @@ void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
   *****************************************************
   *******************************************************/
 
-void VLMO_transposition (VLMO_Operator_Descriptor_t& desc) {
+void VLMO_matrix_transpose (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t, const bool measure) {
+    
+
+    // Performance measurement
+    cudaEvent_t event_start, event_stop;
+    if (measure == true) {
+        VLMO_record_start (event_start, event_stop);
+    }
+
+
+
     if (desc.flag_unified_mem == true) {
         VLMO_transposition_unified (desc);
     } 
+
+
+    
+
+    // Performance measurement
+    if (measure == true) {
+        VLMO_record_end (event_start, event_stop);
+    }
+
 }
 
-void VLMO_transposition_unified (VLMO_Operator_Descriptor_t& desc) {
+void VLMO_matrix_transpose_unified (VLMO_Operator_Descriptor_t& desc) {
+    
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
+
+    size_t m = desc.A_h;
+    size_t n = desc.A_w;
+
+    cuda_matrix_transpose_basic<<<blocks, threads>>> (desc.device_A, desc.device_C, m, n);
+    cudaDeviceSynchronize(); 
+    cudaErrChk( cudaGetLastError ());
 
 }
 

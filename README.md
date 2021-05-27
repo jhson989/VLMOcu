@@ -2,10 +2,10 @@
 
 ## 1. Support operations list  
 1. Element-wise matrix operations  
-      * Element-wise matrix Addition  
-      * Element-wise matrix Subtraction  
-      * Element-wise matrix Multiplication  
-      * Element-wise matrix Division  
+      * Element-wise matrix addition  
+      * Element-wise matrix subtraction  
+      * Element-wise matrix multiplication  
+      * Element-wise matrix division  
 2. Matrix multiplication  
 3. Matrix transposition   
 
