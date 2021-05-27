@@ -89,6 +89,7 @@ void VLMO_element_addition_patch (VLMO_Operator_Descriptor_t& desc) {
 
     for (size_t done = 0; done<num_elements; done+=num_patch_elements) {
         cuda_element_add_patch<<blocks, threas>>> (desc.device_A, desc.device_B, desc.device_C, offset[offset_idx], done, num_elements)
+        // TODO
     }
 
     
