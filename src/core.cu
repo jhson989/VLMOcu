@@ -90,20 +90,34 @@ cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, siz
 
 
 
+
+/******************************************************
+  * Functions for initiating program 
+  *******************************************************/
+void VLMO_init (VLMO_Operator_Descriptor_t& desc) {
+
+}
+
+
+
 /******************************************************
   * Functions for managing device memory
   *******************************************************/
 
 void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbose=false) {
 
+    size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
+
     if (desc.flag_unified_mem == true) {
         VLMO_malloc_device_mem_unified (desc, verbose);
         return ;
-    } 
+    } if (total_size > desc.mem_free_size) {
+        VLMO_malloc_device_mem_patch (desc, verbose);
+        return ;
+    }
 
 
-    if (verbose == true) {
-        size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
+    if (verbose == true) {   
         printf("[Mem] Device memory allocation completed..\n");
         printf("    total usage usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
     }
@@ -114,7 +128,7 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
 
     // Allocate unified memory for A
     if (desc.host_A != nullptr) {
-        cudaErrChk( cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
+        cudaErrChk (cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
         memcpy (desc.device_A, desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
         free (desc.host_A);
         desc.host_A = nullptr;
@@ -122,7 +136,7 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
 
     // Allocate unified memory for B
     if (desc.host_B != nullptr) {
-        cudaErrChk( cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
+        cudaErrChk (cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
         memcpy (desc.device_B, desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
         free (desc.host_B);
         desc.host_B = nullptr;
@@ -130,7 +144,7 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
 
     // Allocate unified memory for C
     if (desc.host_C != nullptr) {
-        cudaErrChk( cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
+        cudaErrChk (cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
         memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
         free (desc.host_C);
         desc.host_C = nullptr;
@@ -142,6 +156,48 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
         printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size*1e-9, desc.mem_free_size*1e-9);
     }
 }
+
+void VLMO_malloc_device_mem_patch (VLMO_Operator_Descriptor_t& desc, const bool verbose=false) {
+        
+    desc.flag_double_buffering = true;
+    cudaStreamCreate (&stream[0]);
+    cudaStreamCreate (&stream[1]);
+
+    if (desc.patch_h == -1 || desc.patch_w == -1) {
+        get_maximum_size_patch (desc);
+    }
+
+    size_t total_size_patch = sizeof (float) * desc.patch_h * desc.patch_w * 2;
+
+    // Allocate unified memory for A
+    if (desc.host_A != nullptr) {
+        cudaErrChk (cudaMalloc (&desc.device_A, total_size_patch));
+        cudaErrChk (cudaMemcpyAsync (desc.device_A, desc.host_A, total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+    }
+
+    // Allocate unified memory for B
+    if (desc.host_B != nullptr) {
+        cudaErrChk (cudaMalloc (&desc.device_B, total_size_patch));
+        cudaErrChk (cudaMemcpyAsync (desc.device_B, desc.host_B, total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+    }
+
+    // Allocate unified memory for C
+    if (desc.host_C != nullptr) {
+        cudaErrChk (cudaMalloc (&desc.device_C, total_size_patch));
+    }
+
+    cudaStreamSync (desc.streams[0]);
+
+    if (verbose == true) {
+        printf("[Mem] Patch memory allocation completed..\n");
+        printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size_patch*1e-9, desc.mem_free_size*1e-9);
+    }
+
+
+}
+
+
+
 
 
 void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
@@ -163,6 +219,11 @@ void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
 
     if (desc.device_C != nullptr)  
         cudaErrChk (cudaFree (desc.device_C));
+
+    if (desc.flag_double_buffering == true) {
+        cudaStreamDestroy(stream[0]);
+        cudaStreamDestroy(stream[1]);
+    }
 
 }
 

@@ -1,5 +1,4 @@
 
-#include "../include/core.cuh"
 #include "../include/utils.cuh"
 
 void VLMO_record_start (cudaEvent_t& event_start, cudaEvent_t& event_end) {
@@ -21,5 +20,13 @@ float VLMO_record_end (cudaEvent_t& event_start, cudaEvent_t& event_end) {
     printf("[Perf] Elaped time: %.4f sec\n", msec*1e-3);
 
     return msec;
+}
+
+void get_maximum_size_patch (VLMO_Operator_Descriptor_t& desc) {
+    
+    
+    desc.patch_w = 1024;
+    desc.patch_h = 1024;
+
 }
 

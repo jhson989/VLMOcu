@@ -70,11 +70,15 @@ typedef struct {
    dim3 num_threads;
    dim3 num_blocks;
    bool flag_unified_mem=false;
+   bool flag_double_buffering=false;
+   size_t patch_h=-1;
+   size_t patch_w=-1;
 
    // Device properties
    size_t num_device=0;
    size_t mem_free_size=0;
    cudaDeviceProp prop;
+   cudaStream_t streams[2];
 
 
 } VLMO_Operator_Descriptor_t;
@@ -84,8 +88,10 @@ typedef struct {
 // Function declaration
 int VLMO_get_device_num(const bool verbose);
 cudaDeviceProp VLMO_get_device_properties(const int device_id, size_t* free, size_t* total, const bool verbose);
+void VLMO_init (VLMO_Operator_Descriptor_t& desc);
 void VLMO_malloc_device_mem (VLMO_Operator_Descriptor_t& desc, const bool verbose);
 void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const bool verbose);
+void VLMO_malloc_device_mem_patch (VLMO_Operator_Descriptor_t& desc, const bool verbose);
 void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc);
 
 #define cudaErrChk(ans) { cudaAssert((ans), __FILE__, __LINE__); }

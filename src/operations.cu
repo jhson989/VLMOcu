@@ -27,7 +27,6 @@ void VLMO_element_operation (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t o
     if (op == VLMO_Op_No) 
         op = desc.op;
 
-
     switch (op) {
         case VLMO_Op_Element_Add:
             VLMO_element_addition (desc);
@@ -51,11 +50,15 @@ void VLMO_element_operation (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t o
 }
 
 
+
+/*******************************************************************/
 /** Element-wise addtion operation **/
 void VLMO_element_addition (VLMO_Operator_Descriptor_t& desc) {
 
     if (desc.flag_unified_mem == true) {
         VLMO_element_addition_unified (desc);
+    } else {
+        VLMO_element_addition_patch (desc);
     }
 
 }
@@ -66,13 +69,36 @@ void VLMO_element_addition_unified (VLMO_Operator_Descriptor_t& desc) {
     dim3 threads = desc.num_threads;
     dim3 blocks = desc.num_blocks;
 
-    cuda_element_add<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_add<<<blocks, threads, desc.streams[1]>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cudaErrChk (cudaMemcpyAsync (desc.device_A, desc.host_A[done], total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+    
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
 }
 
+void VLMO_element_addition_patch (VLMO_Operator_Descriptor_t& desc) {
 
+    size_t num_elements = desc.A_h * desc.B_w;
+    size_t num_patch_elements = desc.patch_h * desc.patch_w;
+    bool offset_idx = false;
+    size_t offset[2] = {0, num_patch_elements*sizeof (float)}
+    dim3 threads = desc.num_threads;
+    dim3 blocks = desc.num_blocks;
+
+
+    for (size_t done = 0; done<num_elements; done+=num_patch_elements) {
+        cuda_element_add_patch<<blocks, threas>>> (desc.device_A, desc.device_B, desc.device_C, offset[offset_idx], done, num_elements)
+    }
+
+    
+
+}
+
+
+
+
+/*******************************************************************/
 /** Element-wise subtraction operation **/
 void VLMO_element_subtraction (VLMO_Operator_Descriptor_t& desc) {
     if (desc.flag_unified_mem == true) {
@@ -93,7 +119,13 @@ void VLMO_element_subtraction_unified (VLMO_Operator_Descriptor_t& desc) {
 
 }
 
+void VLMO_element_subtraction_patch (VLMO_Operator_Descriptor_t& desc) {
 
+}
+
+
+
+/*******************************************************************/
 /** Element-wise multiplication operation **/
 void VLMO_element_multiplication (VLMO_Operator_Descriptor_t& desc) {
     if (desc.flag_unified_mem == true) {
@@ -115,6 +147,11 @@ void VLMO_element_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
 
 }
 
+void VLMO_element_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
+
+}
+
+/*******************************************************************/
 /** Element-wise division operation **/
 void VLMO_element_division (VLMO_Operator_Descriptor_t& desc) {
     if (desc.flag_unified_mem == true) {
@@ -136,7 +173,9 @@ void VLMO_element_division_unified (VLMO_Operator_Descriptor_t& desc) {
 
 }
 
+void VLMO_element_division_patch (VLMO_Operator_Descriptor_t& desc) {
 
+}
 
 
 /******************************************************
