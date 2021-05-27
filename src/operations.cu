@@ -207,7 +207,7 @@ void VLMO_matrix_transpose (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t, c
 
 
     if (desc.flag_unified_mem == true) {
-        VLMO_transposition_unified (desc);
+        VLMO_matrix_transpose_unified (desc);
     } 
 
 
