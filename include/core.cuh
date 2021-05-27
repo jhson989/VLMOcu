@@ -5,15 +5,38 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 // Function declaration
 
 typedef enum {
-   VLMO_Op_Add_t = 0, 
-   VLMO_Op_Subtract_t,
-   VLMO_Op_Multiply_t,
-   VLMO_Op_Transpose_t
+
+    // Element-wise operation
+    VLMO_Op_Element_Add= 0, 
+    VLMO_Op_Element_Sub,
+    VLMO_Op_Element_Mul,
+    VLMO_Op_Element_Div,
+
+    // Matrix multiplication
+    VLMO_Op_Mat_Mul,
+
+    // Single matrix operation
+    VLMO_Op_Transpose,
+
+    // Dummy operation
+    VLMO_Op_No
+
 } VLMO_Operator_t;
+
+const std::string VLMO_Op_Name[] = {
+    "VLMO_Op_Element_Add", // 0
+    "VLMO_Op_Element_Sub",
+    "VLMO_Op_Element_Mul",
+    "VLMO_Op_Element_Div",
+    "VLMO_Op_Mat_MuL",
+    "VLMO_Op_Transpose",
+    "VLMO_Op_No"
+};
 
 typedef enum {
    double_buffering = 0
@@ -44,6 +67,8 @@ typedef struct {
    float* device_C=nullptr;
 
    // Optim
+   dim3 num_threads;
+   dim3 num_blocks;
    bool flag_unified_mem=false;
 
    // Device properties

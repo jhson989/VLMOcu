@@ -1,3 +1,4 @@
+
 #include "../include/core.cuh"
 #include "../include/operations.cuh"
 
@@ -30,11 +31,18 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 }
 
 void test_result (VLMO_Operator_Descriptor_t& desc) {
-    printf("[Test] Start result test..\n");
+
+    printf("[Test] Start checking result ..\n");
     for (int i=0; i<desc.C_h; i++)
         for (int j=0; j<desc.C_w; j++) {
-            if (desc.device_C[i*desc.C_w+j] != desc.device_A[i*desc.C_w+j] + desc.device_B[i*desc.C_w+j]) {
-                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, desc.device_A[i*desc.C_w+j] + desc.device_B[i*desc.C_w+j], desc.device_C[i*desc.C_w+j]);
+
+            float result=0.0f;
+            for (int l=0; l<desc.B_h; l++) {
+                result += desc.device_A[i*desc.C_w+l]*desc.device_B[l*desc.C_w+j];
+            }
+
+            if (desc.device_C[i*desc.C_w+j] != result) {
+                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, result, desc.device_C[i*desc.C_w+j]);
                 return ;
             }
         }
@@ -46,15 +54,17 @@ int main(void) {
 
 
     /****
-      *** Very Large Matrices Addition Example with a Single Device
-      *** There Matrices stored in memory with "row" major
+      *** Very Large Matrix Multiplication Example with a Single Device
+      *** Matrices stored in memory with "row" major
       ****/
 
     // Define this problem 
-    size_t m = 1024*25;
-    size_t n = 1024*25;
-    size_t k = 1024*25;
-    VLMO_Operator_t op = VLMO_Op_Add_t;
+    bool do_test = false;
+    size_t m = 1024*4;
+    size_t n = 1024*4;
+    size_t k = 1024*4;
+
+    VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
     
 
@@ -64,15 +74,20 @@ int main(void) {
 
 
     // Make matrix operation description
+    
+    printf ("Do operation %s\n", VLMO_Op_Name[op].c_str());
+
     VLMO_Operator_Descriptor_t desc;
     desc.op = op;
-    desc.A_w = desc.B_h = k;
-    desc.B_w = desc.C_w = n;
     desc.A_h = desc.C_h = m;
+    desc.B_w = desc.C_w = n;
+    desc.A_w = desc.B_h = k;
     desc.flag_unified_mem = true;
     desc.mem_free_size = free;
     desc.num_device = 1;
     desc.prop = prop;
+    desc.num_threads = dim3(16, 16);
+    desc.num_blocks = dim3((desc.C_h+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_w+desc.num_threads.y-1) / desc.num_threads.y);
 
     // Initiate data for test
     test_init (desc);
@@ -81,15 +96,17 @@ int main(void) {
     VLMO_malloc_device_mem (desc, true);
 
     // Launch matrix addtion kernel
-    printf("[Func] Addition start..\n");
-    VLMO_addition (desc);
+    printf("[Func] %s start..\n", VLMO_Op_Name[op].c_str());
+    VLMO_matrix_multiplication (desc, op, true);
     
     // Test result
-    test_result(desc);
+    if (do_test == true)
+        test_result(desc);
 
     // Free all memory allocations
     VLMO_clear_all (desc);
-    printf("\nEnd..\n");
+    printf("\nEnd..\n\n");
+
     return 0;
 }
 
