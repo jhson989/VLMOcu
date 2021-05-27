@@ -59,9 +59,11 @@ int main(void) {
       ****/
 
     // Define this problem 
-    size_t m = 1024*25;
-    size_t n = 1024*25;
-    size_t k = 1024*25;
+    bool do_test = false;
+    size_t m = 1024*4;
+    size_t n = 1024*4;
+    size_t k = 1024*4;
+
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
     
@@ -98,7 +100,8 @@ int main(void) {
     VLMO_matrix_multiplication (desc, op, true);
     
     // Test result
-    test_result(desc);
+    if (do_test == true)
+        test_result(desc);
 
     // Free all memory allocations
     VLMO_clear_all (desc);
