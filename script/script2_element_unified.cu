@@ -47,7 +47,10 @@ void test_result (VLMO_Operator_Descriptor_t& desc) {
                     result = desc.device_A[i*desc.C_w+j] * desc.device_B[i*desc.C_w+j];
                     break;
                 case VLMO_Op_Element_Div:
-                    result = desc.device_A[i*desc.C_w+j] / desc.device_B[i*desc.C_w+j];
+                    if (desc.device_B[i*desc.C_w+j] != 0)
+                        result = desc.device_A[i*desc.C_w+j] / desc.device_B[i*desc.C_w+j];
+                    else
+                        result = 0.0f;
                     break;
             }
             

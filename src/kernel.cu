@@ -29,7 +29,10 @@ __global__ void cuda_element_div (const float *A, const float *B, float *C, int 
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     
     if (i < length) {
-        C[i] = A[i] / B[i];
+        if (B[i] != 0)
+            C[i] = A[i] / B[i];
+        else
+            C[i] = 0.0;
     }
 }
 
