@@ -187,7 +187,7 @@ void VLMO_malloc_device_mem_patch (VLMO_Operator_Descriptor_t& desc, const bool 
 
     if (verbose == true) {
         printf("[Mem] Patch memory allocation completed..\n");
-        printf("    mem usage : %.3f GB [free : %.3f GB]\n", total_size_patch*1e-9, desc.mem_free_size*1e-9);
+        printf("    mem usage : %.3f GB [free : %.3f GB]\n", 6*total_size_patch*1e-9, desc.mem_free_size*1e-9);
     }
 
 
