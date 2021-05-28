@@ -10,5 +10,6 @@
 3. Matrix transposition   
 
 ## 2. Element-wise matrix operations  
+uni  
 ## 3. Matrix multiplication  
 ## 4. Matrix transposition  
