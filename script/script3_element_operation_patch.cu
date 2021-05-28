@@ -91,7 +91,7 @@ int main(void) {
 
     // Make matrix operation description
     
-    for (int i=0; i<1; i++) { 
+    for (int i=0; i<4; i++) { 
         VLMO_Operator_t op = list_ops[i];
         printf ("Do operation %s\n", VLMO_Op_Name[op].c_str());
 
@@ -111,7 +111,7 @@ int main(void) {
 
         // Launch matrix addtion kernel
         printf("[Func] %s start..\n", VLMO_Op_Name[op].c_str());
-        VLMO_element_operation (desc, op, true);
+        VLMO_element_operation (desc, true);
         
         // Test result
         test_result(desc);

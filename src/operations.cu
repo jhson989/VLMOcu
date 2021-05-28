@@ -16,7 +16,7 @@
   *****************************************************
   *******************************************************/
 
-void VLMO_element_operation (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t op=VLMO_Op_No, const bool measure=false) {
+void VLMO_element_operation (VLMO_Operator_Descriptor_t& desc, const bool measure=false) {
 
     // Performance measurement
     cudaEvent_t event_start, event_stop;
@@ -87,7 +87,6 @@ void VLMO_element_patch (VLMO_Operator_Descriptor_t& desc) {
     num_process_next = num_patch_elements;
     if (done_next+num_process_next >= num_total_elements) num_process_next = num_total_elements - done_next;
     if (num_process_next > 0) {
-        printf("   HtoD: H[%lu, %lu](%d) to (%lu, %lu)\n", done_next/desc.A_w, done_next%desc.A_w, (int)!idx_mem, (done_next+num_process_next)/desc.A_w, (done_next+num_process_next)%desc.A_w);
         cudaErrChk (cudaMemcpyAsync (desc.device_A[(int)!idx_mem], &(desc.host_A[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
         cudaErrChk (cudaMemcpyAsync (desc.device_B[(int)!idx_mem], &(desc.host_B[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
     }

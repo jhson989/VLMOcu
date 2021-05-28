@@ -49,7 +49,7 @@ __global__ void cuda_element_mul_patch (const float *A, const float *B, float *C
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     
     if (done+i < num_elements) {
-        C[i] = A[i] - B[i];
+        C[i] = A[i] * B[i];
     }
 }
 
