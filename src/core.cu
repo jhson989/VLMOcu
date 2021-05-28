@@ -123,24 +123,24 @@ void VLMO_malloc_device_mem_unified (VLMO_Operator_Descriptor_t& desc, const boo
 
     // Allocate unified memory for A
     if (desc.host_A != nullptr) {
-        cudaErrChk (cudaMallocManaged (&desc.device_A, sizeof(float)*desc.A_h*desc.A_w));
-        memcpy (desc.device_A, desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
+        cudaErrChk (cudaMallocManaged (&desc.device_A[0], sizeof(float)*desc.A_h*desc.A_w));
+        memcpy (desc.device_A[0], desc.host_A, sizeof(float)*desc.A_h*desc.A_w);
         free (desc.host_A);
         desc.host_A = nullptr;
     }
 
     // Allocate unified memory for B
     if (desc.host_B != nullptr) {
-        cudaErrChk (cudaMallocManaged (&desc.device_B, sizeof(float)*desc.B_h*desc.B_w));
-        memcpy (desc.device_B, desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
+        cudaErrChk (cudaMallocManaged (&desc.device_B[0], sizeof(float)*desc.B_h*desc.B_w));
+        memcpy (desc.device_B[0], desc.host_B, sizeof(float)*desc.B_h*desc.B_w);
         free (desc.host_B);
         desc.host_B = nullptr;
     }
 
     // Allocate unified memory for C
     if (desc.host_C != nullptr) {
-        cudaErrChk (cudaMallocManaged (&desc.device_C, sizeof(float)*desc.C_h*desc.C_w));
-        memcpy (desc.device_C, desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
+        cudaErrChk (cudaMallocManaged (&desc.device_C[0], sizeof(float)*desc.C_h*desc.C_w));
+        memcpy (desc.device_C[0], desc.host_C, sizeof(float)*desc.C_h*desc.C_w);
         free (desc.host_C);
         desc.host_C = nullptr;
     }
@@ -162,23 +162,24 @@ void VLMO_malloc_device_mem_patch (VLMO_Operator_Descriptor_t& desc, const bool 
         get_maximum_size_patch (desc);
     }
 
-    size_t total_size_patch = sizeof (float) * desc.patch_h * desc.patch_w * 2;
+    size_t total_size_patch = sizeof (float) * desc.patch_h * desc.patch_w;
 
     // Allocate unified memory for A
     if (desc.host_A != nullptr) {
-        cudaErrChk (cudaMalloc (&desc.device_A, total_size_patch));
-        cudaErrChk (cudaMemcpyAsync (desc.device_A, desc.host_A, total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+        cudaErrChk (cudaMalloc (&(desc.device_A[0]), total_size_patch));
+        cudaErrChk (cudaMalloc (&(desc.device_A[1]), total_size_patch));
     }
 
     // Allocate unified memory for B
     if (desc.host_B != nullptr) {
-        cudaErrChk (cudaMalloc (&desc.device_B, total_size_patch));
-        cudaErrChk (cudaMemcpyAsync (desc.device_B, desc.host_B, total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+        cudaErrChk (cudaMalloc (&(desc.device_B[0]), total_size_patch));
+        cudaErrChk (cudaMalloc (&(desc.device_B[1]), total_size_patch));
     }
 
     // Allocate unified memory for C
     if (desc.host_C != nullptr) {
-        cudaErrChk (cudaMalloc (&desc.device_C, total_size_patch));
+        cudaErrChk (cudaMalloc (&(desc.device_C[0]), total_size_patch));
+        cudaErrChk (cudaMalloc (&(desc.device_C[1]), total_size_patch));
     }
 
     cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
@@ -201,20 +202,32 @@ void VLMO_clear_all (VLMO_Operator_Descriptor_t& desc) {
     if (desc.host_A != nullptr)
         free (desc.host_A);
 
-    if (desc.device_A != nullptr)  
-        cudaErrChk (cudaFree (desc.device_A));
+    if (desc.device_A[0] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_A[0]));
+
+    if (desc.device_A[1] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_A[1]));
+
 
     if (desc.host_B != nullptr)
         free (desc.host_B);
 
-    if (desc.device_B != nullptr)  
-        cudaErrChk (cudaFree (desc.device_B));
+    if (desc.device_B[0] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_B[0]));
+
+    if (desc.device_B[1] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_B[1]));
+
 
     if (desc.host_C != nullptr)
         free (desc.host_C); 
 
-    if (desc.device_C != nullptr)  
-        cudaErrChk (cudaFree (desc.device_C));
+    if (desc.device_C[0] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_C[0]));
+
+    if (desc.device_C[1] != nullptr)  
+        cudaErrChk (cudaFree (desc.device_C[1]));
+
 
     if (desc.flag_double_buffering == true) {
         cudaStreamDestroy(desc.streams[0]);

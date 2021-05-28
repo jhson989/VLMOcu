@@ -52,29 +52,28 @@ typedef struct {
    size_t A_h=0;
    size_t A_w=0;
    float* host_A=nullptr;
-   float* device_A=nullptr;
+   float* device_A[2]={nullptr, nullptr};
 
    // B
    size_t B_h=0;
    size_t B_w=0;
    float* host_B=nullptr;
-   float* device_B=nullptr;
+   float* device_B[2]={nullptr, nullptr};
 
    // C
    size_t C_h=0;
    size_t C_w=0;
    float* host_C=nullptr;
-   float* device_C=nullptr;
+   float* device_C[2]={nullptr, nullptr};
 
    // Optim
-   dim3 num_threads;
-   dim3 num_blocks;
    bool flag_unified_mem=false;
    bool flag_double_buffering=false;
    size_t patch_h=0;
    size_t patch_w=0;
 
    // Device properties
+   dim3 num_threads=dim3(256);
    size_t num_device=1;
    size_t mem_free_size=0;
    cudaDeviceProp prop;

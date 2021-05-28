@@ -38,24 +38,24 @@ void test_result (VLMO_Operator_Descriptor_t& desc) {
 
             switch (desc.op) {
                 case VLMO_Op_Element_Add:
-                    result = desc.device_A[i*desc.C_w+j] + desc.device_B[i*desc.C_w+j];
+                    result = desc.device_A[0][i*desc.C_w+j] + desc.device_B[0][i*desc.C_w+j];
                     break;
                 case VLMO_Op_Element_Sub:
-                    result = desc.device_A[i*desc.C_w+j] - desc.device_B[i*desc.C_w+j];
+                    result = desc.device_A[0][i*desc.C_w+j] - desc.device_B[0][i*desc.C_w+j];
                     break;
                 case VLMO_Op_Element_Mul:
-                    result = desc.device_A[i*desc.C_w+j] * desc.device_B[i*desc.C_w+j];
+                    result = desc.device_A[0][i*desc.C_w+j] * desc.device_B[0][i*desc.C_w+j];
                     break;
                 case VLMO_Op_Element_Div:
-                    if (desc.device_B[i*desc.C_w+j] != 0)
-                        result = desc.device_A[i*desc.C_w+j] / desc.device_B[i*desc.C_w+j];
+                    if (desc.device_B[0][i*desc.C_w+j] != 0)
+                        result = desc.device_A[0][i*desc.C_w+j] / desc.device_B[0][i*desc.C_w+j];
                     else
                         result = 0.0f;
                     break;
             }
             
-            if (desc.device_C[i*desc.C_w+j] != result) {
-                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, result, desc.device_C[i*desc.C_w+j]);
+            if (desc.device_C[0][i*desc.C_w+j] != result) {
+                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, result, desc.device_C[0][i*desc.C_w+j]);
                 return ;
             }
         }
@@ -104,7 +104,6 @@ int main(void) {
         desc.num_device = 1;
         desc.prop = prop;
         desc.num_threads = dim3(1024);
-        desc.num_blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
         // Initiate data for test
         test_init (desc);

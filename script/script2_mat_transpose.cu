@@ -30,8 +30,8 @@ void test_result (VLMO_Operator_Descriptor_t& desc) {
         for (int j=0; j<desc.C_w; j++) {
             
 
-            if (desc.device_C[i*desc.C_w+j] != desc.device_A[j*desc.A_w+i]) {
-                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, desc.device_A[j*desc.A_w+i], desc.device_C[i*desc.C_w+j]);
+            if (desc.device_C[0][i*desc.C_w+j] != desc.device_A[0][j*desc.A_w+i]) {
+                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, desc.device_A[0][j*desc.A_w+i], desc.device_C[0][i*desc.C_w+j]);
                 return ;
             }
         }
@@ -73,7 +73,6 @@ int main(void) {
     desc.num_device = 1;
     desc.prop = prop;
     desc.num_threads = dim3(16, 16);
-    desc.num_blocks = dim3((desc.C_h+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_w+desc.num_threads.y-1) / desc.num_threads.y);
 
     // Initiate data for test
     test_init (desc);

@@ -67,9 +67,9 @@ void VLMO_element_addition_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
-    cuda_element_add<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_add<<<blocks, threads>>> (desc.device_A[0], desc.device_B[0], desc.device_C[0], num_elements);
     
     cudaDeviceSynchronize(); 
     cudaErrChk (cudaGetLastError ());
@@ -78,51 +78,102 @@ void VLMO_element_addition_unified (VLMO_Operator_Descriptor_t& desc) {
 
 void VLMO_element_addition_patch (VLMO_Operator_Descriptor_t& desc) {
 
-    size_t num_elements = desc.A_h * desc.B_w;
+    size_t num_total_elements = desc.A_h * desc.A_w;
     size_t num_patch_elements = desc.patch_h * desc.patch_w;
-    bool offset_idx = false;
-    size_t offset[2] = {0, num_patch_elements};
+    size_t num_process=0, num_process_pre=0, num_process_next=0;
+    size_t done=0, done_pre=0, done_next=0;
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((num_patch_elements+desc.num_threads.x-1) / desc.num_threads.x);
+    bool idx_mem=true;
 
 
-    size_t num_process = num_patch_elements;
-    if (num_process >= num_elements) 
-        num_process = num_elements;
-    int pre_done = -num_process;
-    printf("3\n");
+    // Transfer data HtoD first
+    done_next = done + num_process;
+    num_process_next = num_patch_elements;
+    if (done_next+num_process_next >= num_total_elements) num_process_next = num_total_elements - done_next;
+    if (num_process_next > 0) {
+        printf("   HtoD: H[%lu, %lu](%d) to (%lu, %lu)\n", done_next/desc.A_w, done_next%desc.A_w, (int)!idx_mem, (done_next+num_process_next)/desc.A_w, (done_next+num_process_next)%desc.A_w);
+        cudaErrChk (cudaMemcpyAsync (desc.device_A[(int)!idx_mem], &(desc.host_A[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+        cudaErrChk (cudaMemcpyAsync (desc.device_B[(int)!idx_mem], &(desc.host_B[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+    }
+
+    for (done=0; done<num_total_elements; done+=num_process) {
+
+        /* Calculate pre, now, next; **/
+        idx_mem = !idx_mem;
+        // Previous
+        done_pre = done-num_process;
+        num_process_pre = num_process;
+        // Now
+        num_process = num_patch_elements;
+        if (done+num_process >= num_total_elements) num_process = num_total_elements - done;
+        // Next
+        done_next = done + num_process;
+        num_process_next = num_patch_elements;
+        if (done_next+num_process_next >= num_total_elements) num_process_next = num_total_elements - done_next;
+
+
+        /** Launch kernel **/
+        printf("Do: from [%lu, %lu](%d) to (%lu, %lu)\n", done/desc.A_w, done%desc.A_w, (int)idx_mem, (done+num_process)/desc.A_w, (done+num_process)%desc.A_w);
+        cuda_element_add_patch<<<blocks, threads, 0, desc.streams[1]>>> (desc.device_A[(int)idx_mem], desc.device_B[(int)idx_mem], desc.device_C[(int)idx_mem], done, num_total_elements);
+
+        /** Transfer data **/
+        if (num_process_pre > 0) {
+            printf("   DtoH: H[%lu, %lu](%d) to (%lu, %lu)\n", done_pre/desc.A_w, done_pre%desc.A_w, (int)!idx_mem, (done_pre+num_process_pre)/desc.A_w, (done_pre+num_process_pre)%desc.A_w);
+            cudaErrChk (cudaMemcpyAsync (&(desc.host_C[done_pre]), desc.device_C[(int)!idx_mem], num_process_pre*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+        }
+        if (num_process_next > 0) {
+            printf("   HtoD: H[%lu, %lu](%d) to (%lu, %lu)\n", done_next/desc.A_w, done_next%desc.A_w, (int)!idx_mem, (done_next+num_process_next)/desc.A_w, (done_next+num_process_next)%desc.A_w);
+            cudaErrChk (cudaMemcpyAsync (desc.device_A[(int)!idx_mem], &(desc.host_A[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+            cudaErrChk (cudaMemcpyAsync (desc.device_B[(int)!idx_mem], &(desc.host_B[done_next]), num_process_next*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+        }
+        cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+        cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+        cudaErrChk (cudaGetLastError ());
+    }
+
+    /** Get last result **/
+    done_pre = done-num_process;
+    num_process_pre = num_process;
+    if (num_process_pre > 0) {
+        printf("   DtoH: H[%lu, %lu](%d) to (%lu, %lu)\n", done_pre/desc.A_w, done_pre%desc.A_w, (int)!idx_mem, (done_pre+num_process_pre)/desc.A_w, (done_pre+num_process_pre)%desc.A_w);
+        cudaErrChk (cudaMemcpyAsync (&desc.host_C[done_pre], desc.device_C[(int)(idx_mem)], num_process_pre*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+    }
+    cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+    cudaErrChk (cudaGetLastError ());
+
+
+
+/*
     for (size_t done = 0; done<num_elements; done+=num_process) {
-        printf("%lu %lu %lu\n", done, num_process, num_elements);
+        printf("===========================================================\n");
         // Stream #1 : execution
-//        cuda_element_add_patch<<<blocks, threads, 0, desc.streams[1]>>> (desc.device_A, desc.device_B, desc.device_C, offset[(int)offset_idx], done, num_elements);
-        
-        // Stream #0 : data transfer
-        offset_idx = !offset_idx;
-        if (num_process > 0) { // elements to be processed exist
-            printf("offset: %lu, Transfer: H[%lu] with num(%lu) -> D[%lu]\n", offset[(int)offset_idx], done, num_process, offset[(int)offset_idx]);
-            cudaErrChk (cudaMemcpyAsync (desc.device_A+offset[(int)offset_idx], &(desc.host_A[done]), num_process*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
-            cudaErrChk (cudaMemcpyAsync (desc.device_B+offset[(int)offset_idx], &(desc.host_B[done]), num_process*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
-        }
-        if (pre_done >= 0) { // elements to be transferred exist
-            cudaErrChk (cudaMemcpyAsync (&desc.host_C[pre_done], desc.device_C+offset[(int)offset_idx], num_process*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+        printf("Do: H[%lu, %lu](%d) to (%lu, %lu)\n", done/desc.A_w, done%desc.A_w, (int)idx_mem, (done+num_process)/desc.A_w, (done+num_process)%desc.A_w);
+
+        // Update num_process & done_pre
+        idx_mem = !idx_mem;
+        if (done_pre >= 0) { // elements to be transferred exist
         }
 
-        // Update num_process & pre_done
+
+        done_pre = done;
+        num_process_pre = num_process;
         num_process = num_patch_elements;
         if (done + num_process >= num_elements) 
             num_process = (num_elements-done);
-        pre_done = done;
 
+
+        // Stream #0 : data transfer
+        if (num_process > 0) { // elements to be processed exist
+        }
         // Syncronize
         cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
         cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
         cudaErrChk (cudaGetLastError ());
     }
-    printf("4\n");
-    cudaErrChk (cudaMemcpyAsync (&desc.host_C[pre_done], &desc.device_C[offset[(int)offset_idx]], num_process*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
-    printf("5\n");
+    printf("   trans: H[%lu, %lu] with num(%lu) (%lu, %lu)\n", done_pre/desc.A_w, done_pre%desc.A_w, num_process_pre, (done_pre+num_process_pre)/desc.A_w, (done_pre+pre_num_process)%desc.A_w);
 
-
+*/
 }
 
 
@@ -140,9 +191,9 @@ void VLMO_element_subtraction_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
-    cuda_element_sub<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_sub<<<blocks, threads>>> (desc.device_A[0], desc.device_B[0], desc.device_C[0], num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -167,10 +218,10 @@ void VLMO_element_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
 
-    cuda_element_mul<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_mul<<<blocks, threads>>> (desc.device_A[0], desc.device_B[0], desc.device_C[0], num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -193,10 +244,10 @@ void VLMO_element_division_unified (VLMO_Operator_Descriptor_t& desc) {
 
     size_t num_elements = desc.A_h * desc.A_w;
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
 
 
-    cuda_element_div<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
+    cuda_element_div<<<blocks, threads>>> (desc.device_A[0], desc.device_B[0], desc.device_C[0], num_elements);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -242,13 +293,13 @@ void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc, VLMO_Operator
 void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
     
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.C_h+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_w+desc.num_threads.y-1) / desc.num_threads.y);
 
     size_t m = desc.C_h;
     size_t n = desc.B_w;
     size_t k = desc.A_w;
 
-    cuda_matrix_mul_basic<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, m, n, k);
+    cuda_matrix_mul_basic<<<blocks, threads>>> (desc.device_A[0], desc.device_B[0], desc.device_C[0], m, n, k);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 
@@ -292,12 +343,12 @@ void VLMO_matrix_transpose (VLMO_Operator_Descriptor_t& desc, VLMO_Operator_t, c
 void VLMO_matrix_transpose_unified (VLMO_Operator_Descriptor_t& desc) {
     
     dim3 threads = desc.num_threads;
-    dim3 blocks = desc.num_blocks;
+    dim3 blocks = dim3((desc.C_h+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_w+desc.num_threads.y-1) / desc.num_threads.y);
 
     size_t m = desc.A_h;
     size_t n = desc.A_w;
 
-    cuda_matrix_transpose_basic<<<blocks, threads>>> (desc.device_A, desc.device_C, m, n);
+    cuda_matrix_transpose_basic<<<blocks, threads>>> (desc.device_A[0], desc.device_C[0], m, n);
     cudaDeviceSynchronize(); 
     cudaErrChk( cudaGetLastError ());
 

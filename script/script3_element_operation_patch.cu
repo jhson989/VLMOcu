@@ -72,8 +72,8 @@ int main(void) {
       ****/
 
     // Define this problem 
-    size_t w = 1024*20;
-    size_t h = 1024*20;
+    size_t w = 1024*40+10000;
+    size_t h = 1024*20+10000;
     const int num_op = 4;
     VLMO_Operator_t list_ops[num_op] = {
         VLMO_Op_Element_Add,
@@ -101,8 +101,7 @@ int main(void) {
         desc.A_h = desc.B_h = desc.C_h = h;
         desc.prop = prop;
         desc.mem_free_size = free;
-        desc.num_threads = dim3(1024);
-        desc.num_blocks = dim3((desc.A_w*desc.A_h+desc.num_threads.x-1) / desc.num_threads.x);
+        desc.num_threads = dim3(256);
 
         // Initiate data for test
         test_init (desc);
