@@ -9,6 +9,17 @@ __global__ void cuda_element_add (const float *A, const float *B, float *C, int 
     }
 }
 
+
+__global__ void cuda_element_add_patch (const float *A, const float *B, float *C, const size_t offset, const size_t done, const size_t num_elements) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    
+    if (done+i < num_elements) {
+        C[offset+i] = A[offset+i] + B[offset+i];
+    }
+}
+
+
+
 __global__ void cuda_element_sub (const float *A, const float *B, float *C, int length) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     

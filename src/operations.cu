@@ -69,11 +69,10 @@ void VLMO_element_addition_unified (VLMO_Operator_Descriptor_t& desc) {
     dim3 threads = desc.num_threads;
     dim3 blocks = desc.num_blocks;
 
-    cuda_element_add<<<blocks, threads, desc.streams[1]>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
-    cudaErrChk (cudaMemcpyAsync (desc.device_A, desc.host_A[done], total_size_patch/2, cudaMemcpyHostToDevice, desc.streams[0]));
+    cuda_element_add<<<blocks, threads>>> (desc.device_A, desc.device_B, desc.device_C, num_elements);
     
     cudaDeviceSynchronize(); 
-    cudaErrChk( cudaGetLastError ());
+    cudaErrChk (cudaGetLastError ());
 
 }
 
@@ -82,17 +81,47 @@ void VLMO_element_addition_patch (VLMO_Operator_Descriptor_t& desc) {
     size_t num_elements = desc.A_h * desc.B_w;
     size_t num_patch_elements = desc.patch_h * desc.patch_w;
     bool offset_idx = false;
-    size_t offset[2] = {0, num_patch_elements*sizeof (float)}
+    size_t offset[2] = {0, num_patch_elements};
     dim3 threads = desc.num_threads;
     dim3 blocks = desc.num_blocks;
 
 
-    for (size_t done = 0; done<num_elements; done+=num_patch_elements) {
-        cuda_element_add_patch<<blocks, threas>>> (desc.device_A, desc.device_B, desc.device_C, offset[offset_idx], done, num_elements)
-        // TODO
-    }
+    size_t num_process = num_patch_elements;
+    if (num_process >= num_elements) 
+        num_process = num_elements;
+    int pre_done = -num_process;
+    printf("3\n");
+    for (size_t done = 0; done<num_elements; done+=num_process) {
+        printf("%lu %lu %lu\n", done, num_process, num_elements);
+        // Stream #1 : execution
+//        cuda_element_add_patch<<<blocks, threads, 0, desc.streams[1]>>> (desc.device_A, desc.device_B, desc.device_C, offset[(int)offset_idx], done, num_elements);
+        
+        // Stream #0 : data transfer
+        offset_idx = !offset_idx;
+        if (num_process > 0) { // elements to be processed exist
+            printf("offset: %lu, Transfer: H[%lu] with num(%lu) -> D[%lu]\n", offset[(int)offset_idx], done, num_process, offset[(int)offset_idx]);
+            cudaErrChk (cudaMemcpyAsync (desc.device_A+offset[(int)offset_idx], &(desc.host_A[done]), num_process*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+            cudaErrChk (cudaMemcpyAsync (desc.device_B+offset[(int)offset_idx], &(desc.host_B[done]), num_process*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+        }
+        if (pre_done >= 0) { // elements to be transferred exist
+            cudaErrChk (cudaMemcpyAsync (&desc.host_C[pre_done], desc.device_C+offset[(int)offset_idx], num_process*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+        }
 
-    
+        // Update num_process & pre_done
+        num_process = num_patch_elements;
+        if (done + num_process >= num_elements) 
+            num_process = (num_elements-done);
+        pre_done = done;
+
+        // Syncronize
+        cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+        cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+        cudaErrChk (cudaGetLastError ());
+    }
+    printf("4\n");
+    cudaErrChk (cudaMemcpyAsync (&desc.host_C[pre_done], &desc.device_C[offset[(int)offset_idx]], num_process*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+    printf("5\n");
+
 
 }
 

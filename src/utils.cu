@@ -25,8 +25,8 @@ float VLMO_record_end (cudaEvent_t& event_start, cudaEvent_t& event_end) {
 void get_maximum_size_patch (VLMO_Operator_Descriptor_t& desc) {
     
     
-    desc.patch_w = 1024;
-    desc.patch_h = 1024;
+    desc.patch_w = 10240;
+    desc.patch_h = 10240;
 
 }
 

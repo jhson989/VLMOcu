@@ -71,11 +71,11 @@ typedef struct {
    dim3 num_blocks;
    bool flag_unified_mem=false;
    bool flag_double_buffering=false;
-   size_t patch_h=-1;
-   size_t patch_w=-1;
+   size_t patch_h=0;
+   size_t patch_w=0;
 
    // Device properties
-   size_t num_device=0;
+   size_t num_device=1;
    size_t mem_free_size=0;
    cudaDeviceProp prop;
    cudaStream_t streams[2];

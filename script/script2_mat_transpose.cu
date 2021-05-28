@@ -48,9 +48,9 @@ int main(void) {
       ****/
 
     // Define this problem 
-    bool do_test = false;
-    size_t m = 1024*4;
-    size_t n = 1024*4;
+    bool do_test = true;
+    size_t m = 1024*40;
+    size_t n = 1024*20;
     VLMO_Operator_t op = VLMO_Op_Transpose;
     int device_id = 0;
     
