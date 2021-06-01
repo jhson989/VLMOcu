@@ -99,6 +99,22 @@ __global__ void cuda_matrix_mul_basic (const float *A, const float *B, float *C,
     }
 }
 
+__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const size_t M, const size_t N, const size_t K, const size_t patch_h, const size_t patch_w, const size_t patch_h_start, const size_t patch_w_start) {
+
+
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if ((i+patch_h_start<M) && (j+patch_w_start<N)) {
+        float sum=0;
+        for (int l=0; (l<patch_w && l+patch_w_start<K); l++) {
+            sum += A[i*K+l]*B[l*K+j];
+        }
+        C[i*patch_w+j]+=sum;
+    }
+
+}
 
 /******************************************************
   *****************************************************

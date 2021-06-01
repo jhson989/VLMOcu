@@ -33,7 +33,7 @@ const std::string VLMO_Op_Name[] = {
     "VLMO_Op_Element_Sub",
     "VLMO_Op_Element_Mul",
     "VLMO_Op_Element_Div",
-    "VLMO_Op_Mat_MuL",
+    "VLMO_Op_Mat_Mul",
     "VLMO_Op_Transpose",
     "VLMO_Op_No"
 };
@@ -82,6 +82,8 @@ typedef struct {
 
 } VLMO_Operator_Descriptor_t;
 
+const int VLMO_Memcpy_HtoD = 0;
+const int VLMO_Memcpy_DtoH = 1;
 
 
 // Function declaration
