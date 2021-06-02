@@ -1,4 +1,5 @@
 
+#include <cstdio>
 #include "../include/kernel.cuh"
 
 __global__ void cuda_element_add (const float *A, const float *B, float *C, int length) {
@@ -99,17 +100,17 @@ __global__ void cuda_matrix_mul_basic (const float *A, const float *B, float *C,
     }
 }
 
-__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const size_t M, const size_t N, const size_t K, const size_t patch_h, const size_t patch_w, const size_t patch_h_start, const size_t patch_w_start) {
+__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const size_t M, const size_t N, const size_t K, const size_t patch_h, const size_t patch_w, const size_t patch_k, const size_t patch_start_h, const size_t patch_start_w, const size_t patch_start_k) {
 
 
 
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if ((i+patch_h_start<M) && (j+patch_w_start<N)) {
+    if ((i<patch_h) && (i+patch_start_h<M) && (j<patch_w) && (j+patch_start_w<N)) {
         float sum=0;
-        for (int l=0; (l<patch_w && l+patch_w_start<K); l++) {
-            sum += A[i*K+l]*B[l*K+j];
+        for (int l=0; (l<patch_k) && (patch_start_k+l<K); l++) {
+            sum += A[i*patch_k+l]*B[l*patch_k+j];
         }
         C[i*patch_w+j]+=sum;
     }

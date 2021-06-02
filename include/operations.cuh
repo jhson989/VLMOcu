@@ -13,7 +13,7 @@ void VLMO_element_patch (VLMO_Operator_Descriptor_t& desc);
 void VLMO_matrix_multiplication (VLMO_Operator_Descriptor_t& desc, const bool measure);
 void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc);
 void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc);
-void VLMO_memcpy_patch(float* A, float* B, size_t patch_start_h, size_t patch_h, size_t patch_start_w, size_t patch_w, int mode, int idx_mem);
+void VLMO_memcpy_patch(VLMO_Operator_Descriptor_t& desc, float* A, float* B, int mode, int idx_mem, const size_t H_0, const size_t W_0, const size_t len, const size_t max_h, const size_t max_w);
 void VLMO_matrix_transpose (VLMO_Operator_Descriptor_t& desc, const bool measure);
 void VLMO_matrix_transpose_unified (VLMO_Operator_Descriptor_t& desc);
 

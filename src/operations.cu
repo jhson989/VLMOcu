@@ -209,62 +209,78 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
     dim3 blocks = dim3((desc.C_h+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_w+desc.num_threads.y-1) / desc.num_threads.y);
 
     bool idx_mem_C=true, idx_mem_AB=true;
-    size_t patch_h=desc.patch_h, patch_w=desc.patch_w;
+    size_t patch_h=desc.patch_h, patch_w=desc.patch_w, patch_k=desc.patch_w;
     size_t patch_start_h=0, patch_start_w=0, patch_start_k;
     size_t patch_start_h_pre=0, patch_start_w_pre=0;
-    size_t patch_start_h_next=0, patch_start_w_next=0;
+    //size_t patch_start_h_next=0, patch_start_w_next=0;
     
 
     size_t m = desc.C_h;
     size_t n = desc.B_w;
     size_t k = desc.A_w;
-
+    size_t len_k=0, len_w=0;
 
     // Send first input data from host to device
-    
+    cudaErrChk (cudaMemset (desc.device_C[idx_mem_C], 0, patch_w*patch_h*sizeof(float)));
     for (patch_start_h=0; patch_start_h<desc.C_h; patch_start_h+=patch_h) {
         for (patch_start_w=0; patch_start_w<desc.C_w; patch_start_w+=patch_w) {         
 
             /** Update next state **/
-            if (patch_start_w + patch_w >= desc.C_w) patch_start_w_next = 0; else patch_start_w_next = patch_start_w + patch_w;
-            if (patch_start_w + patch_w >= desc.C_w) patch_start_h_next = patch_start_h + patch_h; else patch_start_h_next = patch_start_h;
+            //if (patch_start_w + patch_w >= desc.C_w) patch_start_w_next = 0; else patch_start_w_next = patch_start_w + patch_w;
+            //if (patch_start_w + patch_w >= desc.C_w) patch_start_h_next = patch_start_h + patch_h; else patch_start_h_next = patch_start_h;
             patch_start_k = 0;
 
             idx_mem_C = !idx_mem_C;
-            cudaErrChk (cudaMemset (desc.device_C[idx_mem_C], 0, patch_w*patch_h));
-            VLMO_memcpy_patch(desc.device_A[idx_mem_AB], desc.host_A, patch_start_h, patch_h, patch_start_k, patch_w, VLMO_Memcpy_HtoD, idx_mem_AB);
-            VLMO_memcpy_patch(desc.device_B[idx_mem_AB], desc.host_B, patch_start_k, patch_h, patch_start_w, patch_w, VLMO_Memcpy_HtoD, idx_mem_AB);
+            //(int idx_mem, const size_t H_0, const size_t W_0, const size_t len, const size_t max_h, const size_t max_w)
+            if (patch_start_k+patch_k>=k) len_k=k-(patch_start_k); else len_k=patch_k;
+            VLMO_memcpy_patch(desc, desc.device_A[idx_mem_AB], desc.host_A, VLMO_Memcpy_HtoD, idx_mem_AB, patch_start_h, patch_start_k, len_k, desc.A_h, desc.A_w);
+            if (patch_start_w+patch_w>=n) len_w=n-(patch_start_w); else len_w=patch_w;
+            VLMO_memcpy_patch(desc, desc.device_B[idx_mem_AB], desc.host_B, VLMO_Memcpy_HtoD, idx_mem_AB, patch_start_k, patch_start_w, len_w, desc.B_h, desc.B_w);
 
-            for (patch_start_k=0; patch_start_k<k; patch_start_k+=patch_w) {
+            for (patch_start_k=0; patch_start_k<k; patch_start_k+=patch_k) {
 
                 printf("\n");
                 /** Synchronize device **/
+                printf("sync\n");
                 cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
                 cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
                 cudaErrChk (cudaGetLastError ());
 
                 /** Launch kernel : stream #1 **/
                 printf("do [h%lu w%lu k%lu][AB%d][C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
-                //cuda_matrix_mul_patch<<<blocks, threads 0, desc.streams[1]>>> (desc.device_A[(int)idx_mem], desc.device_B[(int)idx_mem], desc.device_C[(int)idx_mem], m, n, k, patch_h, patch_w, patch_start_k);    
-                
+                cuda_matrix_mul_patch <<<blocks, threads, 0, desc.streams[1]>>> 
+                    (desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k);    
+                cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+                cudaErrChk (cudaGetLastError ());
+
+                cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+                cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+                cudaErrChk (cudaGetLastError ());
                 /** Send data from host to device **/
                 idx_mem_AB = !idx_mem_AB;
-                if (patch_start_k+patch_w < k) {
-                    VLMO_memcpy_patch(desc.device_A[idx_mem_AB], desc.host_A, patch_start_h, patch_h, patch_start_k+patch_w, patch_w, VLMO_Memcpy_HtoD, idx_mem_AB);
-                    VLMO_memcpy_patch(desc.device_B[idx_mem_AB], desc.host_B, patch_start_k+patch_w, patch_h, patch_start_w, patch_w, VLMO_Memcpy_HtoD, idx_mem_AB);        
+                if (patch_start_k+patch_k < k) {
+                    if (patch_start_k+2*patch_k>=k) len_k=k-(patch_start_k+patch_k); else len_k=patch_k;
+                    VLMO_memcpy_patch(desc, desc.device_A[idx_mem_AB], desc.host_A, VLMO_Memcpy_HtoD, idx_mem_AB, patch_start_h, patch_start_k+patch_k, len_k, desc.A_h, desc.A_w);
+                    VLMO_memcpy_patch(desc, desc.device_B[idx_mem_AB], desc.host_B, VLMO_Memcpy_HtoD, idx_mem_AB, patch_start_k+patch_k, patch_start_w, len_w, desc.B_h, desc.B_w);
                 }
                 
             }
 
             /** Transfer data : stream #0 **/
             // Get result from device to host
-            
             if (patch_start_h_pre != patch_start_h || patch_start_w_pre != patch_start_w) {
-                VLMO_memcpy_patch(desc.host_C, desc.device_C[!idx_mem_C], patch_start_h_pre, patch_h, patch_start_w_pre, patch_w, VLMO_Memcpy_DtoH, !idx_mem_C);
+                if (patch_start_w_pre+patch_w>=desc.C_w) len_w = desc.C_w-(patch_start_w_pre); else len_w = patch_w;
+                VLMO_memcpy_patch(desc, desc.host_C, desc.device_C[!idx_mem_C], VLMO_Memcpy_DtoH, !idx_mem_C, patch_start_h_pre, patch_start_w_pre, len_w, desc.C_h, desc.C_w);
+                cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+                cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+                cudaErrChk (cudaGetLastError ());
+    
             }
-            
+    
+            cudaErrChk (cudaMemset (desc.device_C[!idx_mem_C], 0, patch_w*patch_h*sizeof(float)));        
                             
             /** Synchronize device **/
+            printf("sync\n");
             cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
             cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
             cudaErrChk (cudaGetLastError ());
@@ -278,30 +294,28 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
         }
     }
     // Get last result from device to host
-    VLMO_memcpy_patch(desc.host_C, desc.device_C[idx_mem_C], patch_start_h_pre, patch_h, patch_start_w_pre, patch_w, VLMO_Memcpy_DtoH, idx_mem_C);
-
-
+    if (patch_start_w_pre+patch_w>=desc.C_w) len_w = desc.C_w-(patch_start_w_pre); else len_w = patch_w;
+    VLMO_memcpy_patch(desc, desc.host_C, desc.device_C[idx_mem_C], VLMO_Memcpy_DtoH, idx_mem_C, patch_start_h_pre, patch_start_w_pre, len_w, desc.C_h, desc.C_w); 
+    cudaErrChk (cudaStreamSynchronize (desc.streams[0]));
+    cudaErrChk (cudaStreamSynchronize (desc.streams[1]));
+    cudaErrChk (cudaGetLastError ());
 }
 
 
-void VLMO_memcpy_patch(float* A, float* B, size_t patch_start_h, size_t patch_h, size_t patch_start_w, size_t patch_w, int mode, int idx_mem, size_t max_h, size_t max_w) {
+void VLMO_memcpy_patch(VLMO_Operator_Descriptor_t& desc, float* A, float* B, int mode, int idx_mem, const size_t H_0, const size_t W_0, const size_t len, const size_t max_h, const size_t max_w) {
 
     // TODO
+    size_t H = desc.patch_h;
+    if (H_0+H>max_h) H = max_h-H_0;
     if (mode == VLMO_Memcpy_HtoD) {
-        printf("Send [%lu %lu][%d]\n", patch_start_h, patch_start_w, idx_mem);
-        int len_w = patch_w;
-        if (patch_start_w+patch_w >= max_w) len_w = max_w-patch_start_w;
-
-        for (int h=patch_start_h; h<patch_h && h<max_h; h++) {
-            cudaErrChk (cudaMemcpyAsync (&A[h*patch_w], &B[h*max_w+patch_start_w], len_w*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
+        printf("Send[%d] [%lu -> %lu][%lu -> %lu]  (%lu, %lu)\n", idx_mem, H_0, H_0+H, W_0, W_0+len, max_h, max_w);
+        for (size_t h=0; h<H; h++) {
+            cudaErrChk (cudaMemcpyAsync (&A[h*desc.patch_w], &B[(H_0+h)*max_w+W_0], len*sizeof (float), cudaMemcpyHostToDevice, desc.streams[0]));
         }  
     } else {
-        printf("Receive [%lu %lu][%d]\n", patch_start_h, patch_start_w, idx_mem);
-        int len_w = patch_w;
-        if (patch_start_w+patch_w >= max_w) len_w = max_w-patch_start_w;
-
-        for (int h=patch_start_h; h<patch_h && h<max_h; h++) {
-            cudaErrChk (cudaMemcpyAsync (&A[h*max_w+patch_start_w], &B[h*patch_w], len_w*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
+        printf("Receive[%d] [%lu -> %lu][%lu -> %lu]\n", idx_mem, H_0, H_0+H, W_0, W_0+len);
+        for (size_t h=0; h<H; h++) {
+            cudaErrChk (cudaMemcpyAsync (&A[(H_0+h)*max_w+W_0], &B[h*desc.patch_w], len*sizeof (float), cudaMemcpyDeviceToHost, desc.streams[0]));
         }  
     }
 }
