@@ -104,10 +104,10 @@ __global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C,
 
 
 
-    int i = blockIdx.y * blockDim.y + threadIdx.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x;
-
+    unsigned int i = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int j = blockIdx.x * blockDim.x + threadIdx.x;
     if ((i<patch_h) && (i+patch_start_h<M) && (j<patch_w) && (j+patch_start_w<N)) {
+        
         float sum=0;
         for (int l=0; (l<patch_k) && (patch_start_k+l<K); l++) {
             sum += A[i*patch_k+l]*B[l*patch_k+j];

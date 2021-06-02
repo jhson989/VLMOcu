@@ -49,6 +49,7 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
                 return ;
             }
         }
+        printf("[%d/%lu]\n", i, desc.C_h);
     }
     printf("[Test] Test success!\n");
 }
@@ -64,9 +65,10 @@ int main(void) {
       ****/
 
     // Define this problem 
-    size_t m = 55*4+51;
-    size_t n = 55+144;
-    size_t k = 246+11;
+    bool flag_test = true;
+    size_t m = 1024*40+19;
+    size_t n = 1024*60+18;
+    size_t k = 1024*30+17;
 
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
@@ -96,14 +98,15 @@ int main(void) {
     test_init (desc);
 
     // Allocate device memory
-    VLMO_malloc_device_mem (desc, false);
+    VLMO_malloc_device_mem (desc, true);
 
     // Launch matrix addtion kernel
     printf("[Func] %s start..\n", VLMO_Op_Name[op].c_str());
-    VLMO_matrix_multiplication (desc, false);
+    VLMO_matrix_multiplication (desc, true);
     
     // Test result
-    test_result(desc, desc.host_A, desc.host_B, desc.host_C);
+    if (flag_test)
+        test_result(desc, desc.host_A, desc.host_B, desc.host_C);
 
     // Free all memory allocations
     VLMO_clear_all (desc);
