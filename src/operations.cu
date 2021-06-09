@@ -207,8 +207,11 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
     
     dim3 threads = desc.num_threads;
     dim3 blocks = dim3((desc.C_w+desc.num_threads.x-1) / desc.num_threads.x, (desc.C_h+desc.num_threads.y-1) / desc.num_threads.y);
+<<<<<<< HEAD
     const size_t len_tile = threads.x;
     const size_t size_smem = 2*sizeof(float)*len_tile*len_tile;
+=======
+>>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
     bool idx_mem_C=true, idx_mem_AB=true;
     size_t patch_h=desc.patch_h, patch_w=desc.patch_w, patch_k=desc.patch_w;
     size_t patch_start_h=0, patch_start_w=0, patch_start_k;
@@ -250,8 +253,11 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
                 printf("do [h%lu w%lu k%lu][AB%d][C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
                 cuda_matrix_mul_patch <<<blocks, threads, 0, desc.streams[1]>>> 
                     (desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k);    
+<<<<<<< HEAD
                 //cuda_matrix_mul_patch_tiled <<<blocks, threads, size_smem, desc.streams[1]>>> 
                 //    (desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k, len_tile);    
+=======
+>>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
                 
                 /** Send data from host to device **/
                 idx_mem_AB = !idx_mem_AB;
