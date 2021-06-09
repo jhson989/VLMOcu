@@ -9,6 +9,8 @@
 
 // Function declaration
 
+#define NUM_CPU_CORE (6)
+
 typedef enum {
 
     // Element-wise operation

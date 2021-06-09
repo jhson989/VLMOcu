@@ -1,22 +1,28 @@
 #include "../include/core.cuh"
 #include "../include/operations.cuh"
+#include <omp.h>
+
 
 void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     srand(0);
+
     // A
     float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
-    for (int i=0; i<desc.A_h; i++)
-        for (int j=0; j<desc.A_w; j++)
+    for (int i=0; i<desc.A_h; i++) {
+        for (int j=0; j<desc.A_w; j++) {
             A[i*desc.A_w+j] = (rand ()%1000-500)/100;
+        }
+    }
     desc.host_A = A;
 
     // B
     float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
-
-    for (int i=0; i<desc.B_h; i++)
-        for (int j=0; j<desc.B_w; j++)
+    for (int i=0; i<desc.B_h; i++) {
+        for (int j=0; j<desc.B_w; j++) {
             B[i*desc.B_w+j] = (rand ()%1000-500)/100;
+        }
+    }
     desc.host_B = B;
 
     // C
@@ -25,78 +31,93 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
     printf("[Mem] Host memory allocation completed..\n");
-    printf("    total memory  usage : %.3f GB\n", total_size*1e-9);
-
+    printf("    total usage usage : %.3f GB\n", total_size*1e-9);
 }
 
-void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float*B, float* C) {
+void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C, const bool do_test) {
+
+    if (do_test == false) {
+        printf("[TEST] Test skipped..\n");
+        return;
+    }
 
     printf("[Test] Start checking result ..\n");
-    float result = 0.0f;
-    for (int i=0; i<desc.C_h; i++)
-        for (int j=0; j<desc.C_w; j++) {
+    
 
-            switch (desc.op) {
-                case VLMO_Op_Element_Add:
-                    result = A[i*desc.C_w+j] + B[i*desc.C_w+j];
-                    break;
-                case VLMO_Op_Element_Sub:
-                    result = A[i*desc.C_w+j] - B[i*desc.C_w+j];
-                    break;
-                case VLMO_Op_Element_Mul:
-                    result = A[i*desc.C_w+j] * B[i*desc.C_w+j];
-                    break;
-                case VLMO_Op_Element_Div:
-                    if (B[i*desc.C_w+j] != 0)
-                        result = A[i*desc.C_w+j] / B[i*desc.C_w+j];
-                    else
-                        result = 0.0f;
-                    break;
+
+    bool flag_exit[NUM_CPU_CORE] = {0};
+    for (size_t i=0; i<desc.C_h; i++) {
+        if (i%100 == 0) {
+            printf("\r    Test....[%5lu/%5lu]", i, desc.C_h);
+            fflush(stdout);
+        }
+
+        #pragma omp parallel for num_threads(NUM_CPU_CORE)
+        for (size_t j=0; j<desc.C_w; j++) {
+            int tid = omp_get_thread_num();
+            float result=0.0f;
+            for (size_t l=0; l<desc.B_h; l++) {
+                result += A[i*desc.A_w+l]*B[l*desc.B_w+j];
             }
-            
+
             if (C[i*desc.C_w+j] != result) {
-                printf("[Test] Test failed... C[%d, %d] = %f, but %f\n", i, j, result, C[i*desc.C_w+j]);
-                return ;
+                printf("\n[Test] Test failed... C[%lu, %lu] = %f, but %f\n", i, j, result, C[i*desc.C_w+j]);
+                printf("    Test failed...!\n");
+                flag_exit[tid] = true;
             }
         }
 
-    printf("[Test] Test success!\n");
+        for (int tid=0; tid<NUM_CPU_CORE; tid++)
+            if (flag_exit[tid] == true)
+                return;
+
+    }
+    
+    printf("\n[Test] Test success!\n");
+    return;
 }
 
-int main(void) {
+
+
+int main(int argc, char** argv) {
 
 
     /****
-      *** Very Large Matrices Element-wise Operation Example with a Single Device
-      *** These matrices stored in memory with "row" major
+      *** Very Large Matrix Multiplication Example with a Single Device
+      *** Matrices stored in memory with "row" major
       ****/
 
-    // Define a example problem 
-    size_t w = 1024*3+40;
-    size_t h = 1024*2+4;
-    printf("Total size of matrix: %.3f GB\n", sizeof(float)*w*h*3*1e-9);
+    // Define this problem 
+    bool flag_test = false;
+    if (argc >= 2)
+        flag_test = (bool)atoi(argv[1]);
+    size_t m = 1024*40+19;
+    size_t n = 1024*5+18;
+    size_t k = 1024*30+17;
+
+    VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
     
-    // Get environment
+
+    // Get device information
     size_t free, total;
     cudaDeviceProp prop =  VLMO_get_device_properties (device_id, &free, &total, false);
 
 
-    /** Patch based operations **/
-    VLMO_Operator_t op = VLMO_Op_Mat_Mul;
-    printf("=======================================================\n");
-    printf ("[%s]\n", VLMO_Op_Name[op].c_str());
-    printf("=======================================================\n");
+    // Make matrix operation description
+    
+    printf ("Do operation %s\n", VLMO_Op_Name[op].c_str());
 
-    // Descript a opearator
     VLMO_Operator_Descriptor_t desc;
     desc.op = op;
-    desc.A_w = desc.B_w = desc.C_w = w;
-    desc.A_h = desc.B_h = desc.C_h = h;
-    desc.prop = prop;
+    desc.A_h = desc.C_h = m;
+    desc.B_w = desc.C_w = n;
+    desc.A_w = desc.B_h = k;
+    desc.flag_unified_mem = false;
     desc.mem_free_size = free;
+    desc.num_device = 1;
+    desc.prop = prop;
     desc.num_threads = dim3(16, 16);
-    desc.flag_unified_mem=false;
 
     // Initiate data for test
     test_init (desc);
@@ -109,13 +130,12 @@ int main(void) {
     VLMO_matrix_multiplication (desc, true);
     
     // Test result
-    test_result(desc, desc.host_A, desc.host_B, desc.host_C);
+    test_result(desc, desc.host_A, desc.host_B, desc.host_C, flag_test);
 
     // Free all memory allocations
     VLMO_clear_all (desc);
-    printf("=======================================================\n\n\n");
+    printf("\nEnd..\n\n");
 
- 
     return 0;
 }
 
