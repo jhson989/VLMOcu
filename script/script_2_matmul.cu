@@ -35,7 +35,6 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
     printf("    total usage usage : %.3f GB\n", total_size*1e-9);
 }
 
-<<<<<<< HEAD
 void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C, const bool do_test) {
 
     if (do_test == false) {
@@ -59,16 +58,6 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
             int tid = omp_get_thread_num();
             float result=0.0f;
             for (size_t l=0; l<desc.B_h; l++) {
-=======
-void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C) {
-
-    printf("[Test] Start checking result ..\n");
-    for (int i=0; i<desc.C_h; i++) {
-        for (int j=0; j<desc.C_w; j++) {
-
-            float result=0.0f;
-            for (int l=0; l<desc.B_h; l++) {
->>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
                 result += A[i*desc.A_w+l]*B[l*desc.B_w+j];
             }
 
@@ -78,7 +67,6 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
                 flag_exit[tid] = true;
             }
         }
-<<<<<<< HEAD
 
         for (int tid=0; tid<NUM_CPU_CORE; tid++)
             if (flag_exit[tid] == true)
@@ -88,20 +76,11 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
     
     printf("\n[Test] Test success!\n");
     return;
-=======
-        printf("[%d/%lu]\n", i, desc.C_h);
-    }
-    printf("[Test] Test success!\n");
->>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
 }
 
 
 
-<<<<<<< HEAD
 int main(int argc, char** argv) {
-=======
-int main(void) {
->>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
 
 
     /****
@@ -110,17 +89,11 @@ int main(void) {
       ****/
 
     // Define this problem 
-<<<<<<< HEAD
     bool flag_test = false;
     if (argc >= 2)
         flag_test = (bool)atoi(argv[1]);
     size_t m = 1024*40+19;
     size_t n = 1024*5+18;
-=======
-    bool flag_test = true;
-    size_t m = 1024*40+19;
-    size_t n = 1024*60+18;
->>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
     size_t k = 1024*30+17;
 
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
@@ -158,12 +131,7 @@ int main(void) {
     VLMO_matrix_multiplication (desc, true);
     
     // Test result
-<<<<<<< HEAD
     test_result(desc, desc.host_A, desc.host_B, desc.host_C, flag_test);
-=======
-    if (flag_test)
-        test_result(desc, desc.host_A, desc.host_B, desc.host_C);
->>>>>>> d2495bd816776a64245e8208c23fd84c3b736341
 
     // Free all memory allocations
     VLMO_clear_all (desc);
