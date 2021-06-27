@@ -147,6 +147,28 @@ __global__ void cuda_matrix_mul_patch_tiled (const float *A, const float *B, flo
         C[i*B_w+j] += sum;
 }
 
+__global__ void cuda_matrix_mul_patch_tiled_full_loaded (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    int len_tile = blockDim.x, si=threadIdx.y, sj=threadIdx.x;
+    int sidx = si*len_tile+sj;
+
+    extern __shared__ float smem[];
+    float *sA = &smem[0];
+    float *sB = &smem[len_tile*len_tile];
+    
+    float sum = 0.f;
+    for (int tile=0; tile<K; tile+=len_tile) {
+        sA[sidx] = A[i*A_w+(tile+sj)];
+        sB[sidx] = B[(tile+si)*B_w+j];
+        __syncthreads();
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
+        __syncthreads();
+    }
+    C[i*B_w+j] += sum;
+}
 
 /******************************************************
   *****************************************************

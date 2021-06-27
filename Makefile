@@ -2,7 +2,7 @@ CC = /usr/local/cuda/bin/nvcc
 PROGS = 
 CUDAFILES = src/core.cu src/operations.cu src/kernel.cu src/utils.cu
 INCS = include/core.cuh include/operations.cuh include/kernel.cuh include/utils.cuh
-OPTIONS = -lcuda -O3 -Xcompiler -fopenmp
+OPTIONS = -lcuda -O3 -Xcompiler -fopenmp -lcublas
 
 all: ${PROGS}
 

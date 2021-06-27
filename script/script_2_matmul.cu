@@ -10,10 +10,20 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     // A
     float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
+    for (int i=0; i<desc.A_h; i++) {
+        for (int j=0; j<desc.A_w; j++) {
+            A[i*desc.A_w+j] = ((float)(rand ()%10));
+        }
+    }
     desc.host_A = A;
 
     // B
     float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
+    for (int i=0; i<desc.B_h; i++) {
+        for (int j=0; j<desc.B_w; j++) {
+            B[i*desc.B_w+j] = ((float)(rand ()%10));
+        }
+    }
     desc.host_B = B;
 
     // C
@@ -52,7 +62,8 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
             }
 
             if (C[i*desc.C_w+j] != result) {
-                printf("\n[Test] Test failed... C[%lu, %lu] = %f, but %f\n", i, j, result, C[i*desc.C_w+j]);
+                if (flag_exit[tid] == false)
+                    printf("\n[Test] Test failed... C[%lu, %lu] = %f, but %f\n", i, j, result, C[i*desc.C_w+j]);
                 flag_exit[tid] = true;
             }
         }
@@ -84,9 +95,9 @@ int main(int argc, char** argv) {
     bool flag_test = false;
     if (argc >= 2)
         flag_test = (bool)atoi(argv[1]);
-    size_t m = 1024*50;
-    size_t n = 1024*40;
-    size_t k = 1024*40;
+    size_t m = 1024*48;
+    size_t n = 1024*48;
+    size_t k = 1024*48;
 
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
@@ -107,6 +118,7 @@ int main(int argc, char** argv) {
     desc.B_w = desc.C_w = n;
     desc.A_w = desc.B_h = k;
     desc.flag_unified_mem = false;
+    desc.flag_cublas = false;
     desc.mem_free_size = free;
     desc.num_device = 1;
     desc.prop = prop;
