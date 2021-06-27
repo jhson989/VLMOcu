@@ -10,24 +10,10 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     // A
     float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
-    /*
-    for (int i=0; i<desc.A_h; i++) {
-        for (int j=0; j<desc.A_w; j++) {
-            A[i*desc.A_w+j] = (rand ()%5);
-        }
-    }
-    */
     desc.host_A = A;
 
     // B
     float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
-    /*
-    for (int i=0; i<desc.B_h; i++) {
-        for (int j=0; j<desc.B_w; j++) {
-            B[i*desc.B_w+j] = (rand ()%5);
-        }
-    }
-    */
     desc.host_B = B;
 
     // C

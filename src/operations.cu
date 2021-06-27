@@ -246,7 +246,7 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
                 cudaErrChk (cudaGetLastError ());
 
                 /** Launch kernel : stream #1 **/
-                printf("do [h%lu w%lu k%lu][AB%d][C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
+                printf("    [Exec] patch [h%lu w%lu k%lu][AB%d][C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
                 
                 _VLMO_matrix_mul_patch (blocks, threads, desc.streams[1], desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k);    
                 
