@@ -100,61 +100,51 @@ __global__ void cuda_matrix_mul_basic (const float *A, const float *B, float *C,
     }
 }
 
-__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const size_t M, const size_t N, const size_t K, const size_t patch_h, const size_t patch_w, const size_t patch_k, const size_t patch_start_h, const size_t patch_start_w, const size_t patch_start_k) {
+__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
 
 
 
     unsigned int i = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int j = blockIdx.x * blockDim.x + threadIdx.x;
-    if ((i<patch_h) && (i+patch_start_h<M) && (j<patch_w) && (j+patch_start_w<N)) {
-        
+    if (i<M && j<N) {
         float sum=0;
-        for (int l=0; (l<patch_k) && (patch_start_k+l<K); l++) {
-            sum += A[i*patch_k+l]*B[l*patch_k+j];
+        for (int l=0; l<K; l++) {
+            sum += A[i*A_w+l]*B[l*B_w+j];
         }
-        C[i*patch_w+j]+=sum;
+        C[i*B_w+j]+=sum;
     }
 
 }
 
-__global__ void cuda_matrix_mul_patch_tiled (const float *A, const float *B, float *C, const size_t M, const size_t N, const size_t K, const size_t patch_h, const size_t patch_w, const size_t patch_k, const size_t patch_start_h, const size_t patch_start_w, const size_t patch_start_k, const size_t len_tile) {
+__global__ void cuda_matrix_mul_patch_tiled (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
 
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    int len_tile = blockDim.x, si=threadIdx.y, sj=threadIdx.x;
+    int sidx = si*len_tile+sj;
 
     extern __shared__ float smem[];
     float *sA = &smem[0];
     float *sB = &smem[len_tile*len_tile];
-
-    unsigned int i = blockIdx.y * blockDim.y + threadIdx.y;
-    unsigned int si = threadIdx.y;
-    unsigned int j = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int sj = threadIdx.x;
     
-    
-    
-    float sum=0;
-    for (int l=0; (l<patch_k) && (patch_start_k+l<K); l+=len_tile) {
-        //sum += A[i*patch_k+l]*B[l*patch_k+j];
-
-        if ((patch_start_k+(l+sj)<K))
-            sA[si*len_tile+sj] = A[i*patch_k+(l+sj)];
+    float sum = 0.f;
+    for (int tile=0; tile<K; tile+=len_tile) {
+        
+        if (tile+sj<K && i<M)
+            sA[sidx] = A[i*A_w+(tile+sj)];
         else
-            sA[si*len_tile+sj] = 0;
-        if ((patch_start_k+(l+si)<K))
-            sB[si*len_tile+sj] = B[(l+si)*patch_k+j];
-        else
-            sB[si*len_tile+sj] = 0;
-
+            sA[sidx] = 0.f;
+        if (tile+si<K && j<N)
+            sB[sidx] = B[(tile+si)*B_w+j];
+        else 
+            sB[sidx] = 0.f;
         __syncthreads();
-
-        for (int k=0; k<len_tile; k++) {
-            sum += sA[(si*len_tile)+k]*sB[(k*len_tile)+sj];
-        }
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
         __syncthreads();
     }
-    if ((i<patch_h) && (i+patch_start_h<M) && (j<patch_w) && (j+patch_start_w<N)) {
-        C[i*patch_w+j]+=sum;
-    }
-
+    if (i<M && j<N)
+        C[i*B_w+j] += sum;
 }
 
 

@@ -10,20 +10,24 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     // A
     float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
+    /*
     for (int i=0; i<desc.A_h; i++) {
         for (int j=0; j<desc.A_w; j++) {
-            A[i*desc.A_w+j] = (rand ()%1000-500)/100;
+            A[i*desc.A_w+j] = (rand ()%5);
         }
     }
+    */
     desc.host_A = A;
 
     // B
     float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
+    /*
     for (int i=0; i<desc.B_h; i++) {
         for (int j=0; j<desc.B_w; j++) {
-            B[i*desc.B_w+j] = (rand ()%1000-500)/100;
+            B[i*desc.B_w+j] = (rand ()%5);
         }
     }
+    */
     desc.host_B = B;
 
     // C
@@ -32,7 +36,7 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     size_t total_size = sizeof(float)*desc.A_h*desc.A_w + sizeof(float)*desc.B_h*desc.B_w + sizeof(float)*desc.C_h*desc.C_w;
     printf("[Mem] Host memory allocation completed..\n");
-    printf("    total usage usage : %.3f GB\n", total_size*1e-9);
+    printf("    total memory usage : %.3f GB\n", total_size*1e-9);
 }
 
 void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C, const bool do_test) {
@@ -63,14 +67,16 @@ void test_result (VLMO_Operator_Descriptor_t& desc, float* A, float* B, float* C
 
             if (C[i*desc.C_w+j] != result) {
                 printf("\n[Test] Test failed... C[%lu, %lu] = %f, but %f\n", i, j, result, C[i*desc.C_w+j]);
-                printf("    Test failed...!\n");
                 flag_exit[tid] = true;
             }
         }
 
         for (int tid=0; tid<NUM_CPU_CORE; tid++)
-            if (flag_exit[tid] == true)
+            if (flag_exit[tid] == true) {
+                printf("\n[Test] Test failed...!\n");
                 return;
+            }
+                
 
     }
     
@@ -92,9 +98,9 @@ int main(int argc, char** argv) {
     bool flag_test = false;
     if (argc >= 2)
         flag_test = (bool)atoi(argv[1]);
-    size_t m = 1024*40+19;
-    size_t n = 1024*5+18;
-    size_t k = 1024*30+17;
+    size_t m = 1024*50;
+    size_t n = 1024*40;
+    size_t k = 1024*40;
 
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;
@@ -107,7 +113,7 @@ int main(int argc, char** argv) {
 
     // Make matrix operation description
     
-    printf ("Do operation %s\n", VLMO_Op_Name[op].c_str());
+    printf ("VLMO op [%s]\n", VLMO_Op_Name[op].c_str());
 
     VLMO_Operator_Descriptor_t desc;
     desc.op = op;
