@@ -1,4 +1,5 @@
 
+#include <cstdio>
 #include "../include/kernel.cuh"
 
 __global__ void cuda_element_add (const float *A, const float *B, float *C, int length) {
@@ -97,6 +98,53 @@ __global__ void cuda_matrix_mul_basic (const float *A, const float *B, float *C,
         }
         C[i*K+j]=sum;
     }
+}
+
+__global__ void cuda_matrix_mul_patch (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
+
+
+
+    unsigned int i = blockIdx.y * blockDim.y + threadIdx.y;
+    unsigned int j = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i<M && j<N) {
+        float sum=0;
+        for (int l=0; l<K; l++) {
+            sum += A[i*A_w+l]*B[l*B_w+j];
+        }
+        C[i*B_w+j]+=sum;
+    }
+
+}
+
+__global__ void cuda_matrix_mul_patch_tiled (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    int len_tile = blockDim.x, si=threadIdx.y, sj=threadIdx.x;
+    int sidx = si*len_tile+sj;
+
+    extern __shared__ float smem[];
+    float *sA = &smem[0];
+    float *sB = &smem[len_tile*len_tile];
+    
+    float sum = 0.f;
+    for (int tile=0; tile<K; tile+=len_tile) {
+        
+        if (tile+sj<K && i<M)
+            sA[sidx] = A[i*A_w+(tile+sj)];
+        else
+            sA[sidx] = 0.f;
+        if (tile+si<K && j<N)
+            sB[sidx] = B[(tile+si)*B_w+j];
+        else 
+            sB[sidx] = 0.f;
+        __syncthreads();
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
+        __syncthreads();
+    }
+    if (i<M && j<N)
+        C[i*B_w+j] += sum;
 }
 
 
