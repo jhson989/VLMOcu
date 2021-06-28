@@ -212,10 +212,7 @@ void VLMO_matrix_multiplication_unified (VLMO_Operator_Descriptor_t& desc) {
 
 
 void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
-    
-    dim3 threads = desc.num_threads;
-    dim3 blocks = dim3((desc.patch_w+desc.num_threads.x-1) / desc.num_threads.x, (desc.patch_h+desc.num_threads.y-1) / desc.num_threads.y);
-    
+
     bool idx_mem_C=true, idx_mem_AB=true;
     size_t patch_h=desc.patch_h, patch_w=desc.patch_w, patch_k=desc.patch_w;
     size_t patch_start_h=0, patch_start_w=0, patch_start_k;
@@ -254,9 +251,9 @@ void VLMO_matrix_multiplication_patch (VLMO_Operator_Descriptor_t& desc) {
                 cudaErrChk (cudaGetLastError ());
 
                 /** Launch kernel : stream #1 **/
-                printf("    [Exec] patch [h%lu w%lu k%lu][AB%d][C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
+                printf("    [Exec] patch [h%lu w%lu k%lu] data [AB%d] sum [C%d]\n", patch_start_h, patch_start_w, patch_start_k, (int)idx_mem_AB, (int)idx_mem_C);
                 
-                _VLMO_matrix_mul_patch (desc, blocks, threads, desc.streams[1], desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k);    
+                _VLMO_matrix_mul_patch (desc, desc.streams[1], desc.device_A[(int)idx_mem_AB], desc.device_B[(int)idx_mem_AB], desc.device_C[(int)idx_mem_C], m, n, k, patch_h, patch_w, patch_k, patch_start_h, patch_start_w, patch_start_k);    
                 
 
 
@@ -311,28 +308,29 @@ void VLMO_memcpy_patch(VLMO_Operator_Descriptor_t& desc, float* A, float* B, int
         }  
     }
 }
-void _VLMO_matrix_mul_patch (VLMO_Operator_Descriptor_t& desc, dim3 blocks, dim3 threads, cudaStream_t& stream, const float *A, const float *B, float *C, const int M, const int N, const int K, const int patch_h, const int patch_w, const int patch_k, const int patch_start_h, const int patch_start_w, const int patch_start_k) {
+void _VLMO_matrix_mul_patch (VLMO_Operator_Descriptor_t& desc, cudaStream_t& stream, const float *A, const float *B, float *C, const int M, const int N, const int K, const int patch_h, const int patch_w, const int patch_k, const int patch_start_h, const int patch_start_w, const int patch_start_k) {
     
-    
+        
+    dim3 threads = desc.num_threads;
     const size_t size_smem = 2*sizeof(float)*threads.x*threads.x;
 
     int remain_h = (M-patch_start_h) >= patch_h ? patch_h : (M-patch_start_h);
     int remain_w = (N-patch_start_w) >= patch_w ? patch_w : (N-patch_start_w);
     int remain_k = (K-patch_start_k) >= patch_k ? patch_k : (K-patch_start_k);
     
-    //cuda_matrix_mul_patch <<<blocks, threads, 0, stream>>> (A, B, C, remain_h, remain_w, remain_k, patch_k, patch_w);    
-
     // Fully loaded
     if ((M-patch_start_h) >= patch_h && (N-patch_start_w) >= patch_w && (K-patch_start_k) >= patch_k) {
         if (desc.flag_cublas == true) {
             float alpha = 1.0f, beta = 1.0f;
             cuBLASErrChk (cublasSgemm (desc.handle, CUBLAS_OP_N, CUBLAS_OP_N, remain_w, remain_h, remain_k, &alpha, B, remain_w, A, remain_k, &beta, C, remain_w ) );
         } else {
+            dim3 blocks = dim3(  ( ((desc.patch_w+desc.num_threads.x-1) / desc.num_threads.x)+1 )/2, ( ((desc.patch_h+desc.num_threads.y-1) / desc.num_threads.y)+1 )/2  );
             cuda_matrix_mul_patch_tiled_full_loaded <<<blocks, threads, size_smem, stream>>> (A, B, C, remain_h, remain_w, remain_k, patch_k, patch_w);
         }
     }
     // Partially loaded
     else {
+        dim3 blocks = dim3(  ( ((desc.patch_w+desc.num_threads.x-1) / desc.num_threads.x)+0 )/1, ( ((desc.patch_h+desc.num_threads.y-1) / desc.num_threads.y)+0 )/1  );
         cuda_matrix_mul_patch_tiled <<<blocks, threads, size_smem, stream>>> (A, B, C, remain_h, remain_w, remain_k, patch_k, patch_w);
     }
         

@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
     desc.A_w = desc.B_h = k;
     desc.flag_unified_mem = false;
     desc.flag_cublas = false;
-    desc.mem_free_size = free;
+    desc.mem_free_size = true;
     desc.num_device = 1;
     desc.prop = prop;
     desc.num_threads = dim3(16, 16);
