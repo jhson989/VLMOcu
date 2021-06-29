@@ -10,20 +10,24 @@ void test_init (VLMO_Operator_Descriptor_t& desc) {
 
     // A
     float* A = (float*) malloc (sizeof (float)*desc.A_h*desc.A_w);
+    
     for (int i=0; i<desc.A_h; i++) {
         for (int j=0; j<desc.A_w; j++) {
             A[i*desc.A_w+j] = ((float)(rand ()%10));
         }
     }
+    
     desc.host_A = A;
 
     // B
     float* B = (float*) malloc (sizeof (float)*desc.B_h*desc.B_w);
+    
     for (int i=0; i<desc.B_h; i++) {
         for (int j=0; j<desc.B_w; j++) {
             B[i*desc.B_w+j] = ((float)(rand ()%10));
         }
     }
+    
     desc.host_B = B;
 
     // C
@@ -95,9 +99,9 @@ int main(int argc, char** argv) {
     bool flag_test = false;
     if (argc >= 2)
         flag_test = (bool)atoi(argv[1]);
-    size_t m = 1024*48;
-    size_t n = 1024*48;
-    size_t k = 1024*48;
+    size_t m = 1024*16;
+    size_t n = 1024*16;
+    size_t k = 1024*16;
 
     VLMO_Operator_t op = VLMO_Op_Mat_Mul;
     int device_id = 0;

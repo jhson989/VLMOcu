@@ -147,81 +147,40 @@ __global__ void cuda_matrix_mul_patch_tiled (const float *A, const float *B, flo
         C[i*B_w+j] += sum;
 }
 
-__global__ void cuda_matrix_mul_patch_tiled_full_loaded (const float *A, const float *B, float *C, const int M, const int N, const int K, const int A_w, const int B_w) {
+template <int K, int len_tile>
+__global__ void cuda_matrix_mul_patch_tiled_full_loaded (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w) {
 
-    int len_tile = blockDim.x, si=threadIdx.y, sj=threadIdx.x;
+    int si=threadIdx.y, sj=threadIdx.x;
     int sidx = si*len_tile+sj;
     extern __shared__ float smem[];
-    float *sA = &smem[0];
-    float *sB = &smem[len_tile*len_tile];
+    float* sA = smem;
+    float* sB = smem+len_tile*len_tile;
     
-    int i, j;
-    float sum;
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    float sum = 0.f;
 
-
-    i = blockIdx.y * blockDim.y + threadIdx.y;
-    j = blockIdx.x * blockDim.x + threadIdx.x;
-    sum = 0.f;
+    #pragma unroll
     for (int tile=0; tile<K; tile+=len_tile) {
         sA[sidx] = A[i*A_w+(tile+sj)];
         sB[sidx] = B[(tile+si)*B_w+j];
         __syncthreads();
+        #pragma unroll
         for (int k=0; k<len_tile; k++)
             sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
         __syncthreads();
     }
     C[i*B_w+j] += sum;
-    __syncthreads();
-
-
-    i = blockIdx.y * blockDim.y + threadIdx.y;
-    j = blockIdx.x * blockDim.x + (threadIdx.x + gridDim.x*blockDim.x);
-    sum = 0.f;
-    for (int tile=0; tile<K; tile+=len_tile) {
-        sA[sidx] = A[i*A_w+(tile+sj)];
-        sB[sidx] = B[(tile+si)*B_w+j];
-        __syncthreads();
-        for (int k=0; k<len_tile; k++)
-            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
-        __syncthreads();
-    }
-    C[i*B_w+j] += sum;
-    __syncthreads();
-
-
-    
-    i = (blockIdx.y + gridDim.y) * blockDim.y + threadIdx.y;
-    j = blockIdx.x * blockDim.x + threadIdx.x;
-    sum = 0.f;
-    for (int tile=0; tile<K; tile+=len_tile) {
-        sA[sidx] = A[i*A_w+(tile+sj)];
-        sB[sidx] = B[(tile+si)*B_w+j];
-        __syncthreads();
-        for (int k=0; k<len_tile; k++)
-            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
-        __syncthreads();
-    }
-    C[i*B_w+j] += sum;
-    __syncthreads();
-
-
-    i = (blockIdx.y + gridDim.y) * blockDim.y + threadIdx.y;
-    j = blockIdx.x * blockDim.x + (threadIdx.x + gridDim.x*blockDim.x);
-    sum = 0.f;
-    for (int tile=0; tile<K; tile+=len_tile) {
-        sA[sidx] = A[i*A_w+(tile+sj)];
-        sB[sidx] = B[(tile+si)*B_w+j];
-        __syncthreads();
-        for (int k=0; k<len_tile; k++)
-            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
-        __syncthreads();
-    }
-    C[i*B_w+j] += sum;
-    
 
 
 }
 
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*16, 8> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*16, 16> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*16, 32> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*1, 8> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*1, 16> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
+template __global__ void cuda_matrix_mul_patch_tiled_full_loaded<1024*1, 32> (const float *A, const float *B, float *C, const int M, const int N, const int A_w, const int B_w);
 /******************************************************
   *****************************************************
   * CUDA kernels for matrix transposition
@@ -237,3 +196,77 @@ __global__ void cuda_matrix_transpose_basic (const float *in, float *out, const 
 
     out[j*M+i] = in[i*N+j];
 }
+
+
+
+    /*
+    i = blockIdx.y * blockDim.y + threadIdx.y;
+    j = blockIdx.x * blockDim.x + (threadIdx.x + gridDim.x*blockDim.x);
+    sum = 0.f;
+    #pragma unroll
+    for (int tile=0; tile<K; tile+=len_tile) {
+        sA[sidx] = A[i*A_w+(tile+sj)];
+        sB[sidx] = B[(tile+si)*B_w+j];
+        __syncthreads();
+        #pragma unroll
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
+        __syncthreads();
+    }
+    C[i*B_w+j] += sum;
+
+
+    i = (blockIdx.y + gridDim.y) * blockDim.y + threadIdx.y;
+    j = blockIdx.x * blockDim.x + threadIdx.x;
+    sum = 0.f;
+    #pragma unroll
+    for (int tile=0; tile<K; tile+=len_tile) {
+        sA[sidx] = A[i*A_w+(tile+sj)];
+        sB[sidx] = B[(tile+si)*B_w+j];
+        __syncthreads();
+        #pragma unroll
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
+        __syncthreads();
+    }
+    C[i*B_w+j] += sum;
+
+
+    i = (blockIdx.y + gridDim.y) * blockDim.y + threadIdx.y;
+    j = blockIdx.x * blockDim.x + (threadIdx.x + gridDim.x*blockDim.x);
+    sum = 0.f;
+    #pragma unroll
+    for (int tile=0; tile<K; tile+=len_tile) {
+        sA[sidx] = A[i*A_w+(tile+sj)];
+        sB[sidx] = B[(tile+si)*B_w+j];
+        __syncthreads();
+        #pragma unroll
+        for (int k=0; k<len_tile; k++)
+            sum += sA[si*len_tile+k]*sB[k*len_tile+sj];
+        __syncthreads();
+    }
+    C[i*B_w+j] += sum;
+    */
+
+    /*
+    float* sA[2] = {&smem[0], &smem[2*size_smem]};
+    float* sB[2] = {&smem[size_smem], &smem[3*size_smem]};
+    sA[now][sidx] = A[i*A_w+(sj)];
+    sB[now][sidx] = B[(si)*B_w+j];
+    #pragma unroll
+    for (int tile=0; tile<K-len_tile; tile+=len_tile) {
+        __syncthreads();
+        sA[!now][sidx] = A[i*A_w+(tile+sj+len_tile)];
+        sB[!now][sidx] = B[(tile+len_tile+si)*B_w+j];
+        #pragma unroll
+        for (int k=0; k<len_tile; k++)
+            sum += sA[now][si*len_tile+k]*sB[now][k*len_tile+sj];
+        //__syncthreads();
+        now = !now;
+    }
+    
+    __syncthreads();
+    #pragma unroll
+    for (int k=0; k<len_tile; k++)
+        sum += sA[now][si*len_tile+k]*sB[now][k*len_tile+sj];
+    */
